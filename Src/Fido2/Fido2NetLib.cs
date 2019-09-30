@@ -83,11 +83,11 @@ namespace Fido2NetLib
         /// Verifies the assertion response from the browser/authr to assert existing credentials and authenticate a user.
         /// </summary>
         /// <returns></returns>
-        public async Task<AssertionVerificationResult> MakeAssertionAsync(AuthenticatorAssertionRawResponse assertionResponse, AssertionOptions originalOptions, byte[] storedPublicKey, uint storedSignatureCounter, IsUserHandleOwnerOfCredentialIdAsync isUserHandleOwnerOfCredentialIdCallback, byte[] requestTokenBindingId = null)
+        public async Task<AssertionVerificationResult> MakeAssertionAsync(AuthenticatorAssertionRawResponse assertionResponse, AssertionOptions originalOptions, byte[] storedPublicKey, uint storedSignatureCounter, System.Guid storedAAGUID, IsUserHandleOwnerOfCredentialIdAsync isUserHandleOwnerOfCredentialIdCallback, byte[] requestTokenBindingId = null)
         {
             var parsedResponse = AuthenticatorAssertionResponse.Parse(assertionResponse);
 
-            var result = await parsedResponse.VerifyAsync(originalOptions, _config.Origin, storedPublicKey, storedSignatureCounter, isUserHandleOwnerOfCredentialIdCallback, requestTokenBindingId);
+            var result = await parsedResponse.VerifyAsync(originalOptions, _config.Origin, storedPublicKey, storedSignatureCounter, storedAAGUID, _metadataService, isUserHandleOwnerOfCredentialIdCallback, requestTokenBindingId);
 
             return result;
         }

@@ -558,7 +558,7 @@ namespace fido2_net_lib.Test
             {
                 return Task.FromResult(true);
             };
-            var res = await lib.MakeAssertionAsync(response, options, cpk.GetBytes(), signCount - 1, callback);
+            var res = await lib.MakeAssertionAsync(response, options, cpk.GetBytes(), signCount - 1, aaguid, callback);
         }
 
         internal void MakeEdDSA(out byte[] privateKeySeed, out byte[] publicKey, out byte[] expandedPrivateKey)

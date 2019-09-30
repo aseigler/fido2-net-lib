@@ -46,7 +46,7 @@ namespace Fido2NetLib
         /// <param name="options">The assertionoptions that was sent to the client</param>
         /// <param name="expectedOrigin">The expected server origin, used to verify that the signature is sent to the expected server</param>
         /// <param name="storedSignatureCounter">The stored counter value for this CredentialId</param>
-        public async Task<AssertionVerificationResult> VerifyAsync(AssertionOptions options, string expectedOrigin, byte[] storedPublicKey, uint storedSignatureCounter, IsUserHandleOwnerOfCredentialIdAsync isUserHandleOwnerOfCredId, byte[] requestTokenBindingId)
+        public async Task<AssertionVerificationResult> VerifyAsync(AssertionOptions options, string expectedOrigin, byte[] storedPublicKey, uint storedSignatureCounter, Guid storedAAGUID, IMetadataService metadata, IsUserHandleOwnerOfCredentialIdAsync isUserHandleOwnerOfCredId, byte[] requestTokenBindingId)
         {
             BaseVerify(expectedOrigin, options.Challenge, requestTokenBindingId);
 
@@ -145,6 +145,13 @@ namespace Fido2NetLib
             // 17.
             if (authData.SignCount > 0 && authData.SignCount <= storedSignatureCounter)
                 throw new Fido2VerificationException("SignatureCounter was not greater than stored SignatureCounter");
+
+            // Check registered AAGUID to determine if the authenticator still has a desirable status
+            foreach (var report in metadata?.GetEntry(storedAAGUID)?.StatusReports ?? Enumerable.Empty<StatusReport>())
+            {
+                if (Enum.IsDefined(typeof(AttestationFormat.UndesiredAuthenticatorStatus), (AttestationFormat.UndesiredAuthenticatorStatus)report.Status))
+                    throw new Fido2VerificationException("Authenticator found with undesirable status");
+            }
 
             return new AssertionVerificationResult()
             {

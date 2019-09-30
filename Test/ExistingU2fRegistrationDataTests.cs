@@ -61,7 +61,7 @@ namespace fido2_net_lib.Test
                 Origin = "https://localhost:44336" //data was generated with this origin
             });
 
-            var res = await fido2.MakeAssertionAsync(authResponse, options, publicKey.EncodeToBytes(), 0, null);
+            var res = await fido2.MakeAssertionAsync(authResponse, options, publicKey.EncodeToBytes(), 0, Guid.Empty, null);
 
             Assert.Equal("ok", res.Status);
 
