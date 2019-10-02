@@ -167,20 +167,17 @@ namespace Fido2Demo
             // 2. Get registered credential from database
             var creds = DemoStorage.GetCredentialById(clientResponse.Id);
 
-            // 3. Get credential counter from database
-            var storedCounter = creds.SignatureCounter;
-
-            // 4. Create callback to check if userhandle owns the credentialId
+            // 3. Create callback to check if userhandle owns the credentialId
             IsUserHandleOwnerOfCredentialIdAsync callback = async (args) =>
             {
                 var storedCreds = await DemoStorage.GetCredentialsByUserHandleAsync(args.UserHandle);
                 return storedCreds.Exists(c => c.Descriptor.Id.SequenceEqual(args.CredentialId));
             };
 
-            // 5. Make the assertion
-            var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey, storedCounter, callback);
+            // 4. Make the assertion
+            var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey, creds.SignatureCounter, creds.AaGuid, callback);
 
-            // 6. Store the updated counter
+            // 5. Store the updated counter
             DemoStorage.UpdateCounter(res.CredentialId, res.Counter);
 
             var testRes = new
@@ -189,7 +186,7 @@ namespace Fido2Demo
                 errorMessage = ""
             };
 
-            // 7. return OK to client
+            // 6. return OK to client
             return Json(testRes);
         }
 
