@@ -15,7 +15,7 @@ namespace Fido2NetLib
         public byte[] RawId { get; set; }
 
         [JsonPropertyName("type")]
-        public PublicKeyCredentialType? Type { get; set; }
+        public PublicKeyCredentialType Type { get; set; } = PublicKeyCredentialType.PublicKey;
 
         [JsonPropertyName("response")]
         public ResponseData Response { get; set; }

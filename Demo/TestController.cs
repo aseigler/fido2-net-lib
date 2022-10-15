@@ -64,7 +64,6 @@ namespace Fido2Demo
             // 2. Get user existing keys by username
             var existingKeys = DemoStorage.GetCredentialsByUser(user).Select(c => c.Descriptor).ToList();
 
-            //var exts = new AuthenticationExtensionsClientInputs() { Extensions = true, UserVerificationIndex = true, Location = true, UserVerificationMethod = true, BiometricAuthenticatorPerformanceBounds = new AuthenticatorBiometricPerfBounds { FAR = float.MaxValue, FRR = float.MaxValue } };
             var exts = new AuthenticationExtensionsClientInputs() { };
             if (opts.Extensions?.Example != null)
                 exts.Example = opts.Extensions.Example;
@@ -99,12 +98,12 @@ namespace Fido2Demo
             var success = await _fido2.MakeNewCredentialAsync(attestationResponse, options, callback, cancellationToken: cancellationToken);
 
             // 3. Store the credentials in db
-            DemoStorage.AddCredentialToUser(options.User, new StoredCredential
+            DemoStorage.AddCredentialToUser(options.User, new CredentialRecord
             {
-                Descriptor = new PublicKeyCredentialDescriptor(success.Result.CredentialId),
+                Descriptor = new PublicKeyCredentialDescriptor(success.Result.Id),
                 PublicKey = success.Result.PublicKey,
                 UserHandle = success.Result.User.Id,
-                SignatureCounter = success.Result.Counter
+                SignCount = success.Result.SignCount
             });
 
             // 4. return "ok" to the client
@@ -172,10 +171,13 @@ namespace Fido2Demo
             };
 
             // 5. Make the assertion
-            var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey, storedCounter, callback, cancellationToken: cancellationToken);
+            var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey, creds.DevicePublicKeys, storedCounter, callback, cancellationToken: cancellationToken);
 
             // 6. Store the updated counter
-            DemoStorage.UpdateCounter(res.CredentialId, res.Counter);
+            DemoStorage.UpdateCounter(creds.Id, res.SignCount);
+
+            if (res.DevicePublicKey is not null)
+                creds.DevicePublicKeys.Add(res.DevicePublicKey);
 
             var testRes = new
             {

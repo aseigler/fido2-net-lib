@@ -69,10 +69,12 @@ namespace Fido2Demo
                 if (!string.IsNullOrEmpty(authType))
                     authenticatorSelection.AuthenticatorAttachment = authType.ToEnum<AuthenticatorAttachment>();
 
-                var exts = new AuthenticationExtensionsClientInputs() 
-                { 
-                    Extensions = true, 
-                    UserVerificationMethod = true, 
+                var exts = new AuthenticationExtensionsClientInputs()
+                {
+                    Extensions = true,
+                    UserVerificationMethod = true,
+                    DevicePubKey = new AuthenticationExtensionsDevicePublicKeyInputs() { Attestation = attType },
+                    CredProps = true
                 };
 
                 var options = _fido2.RequestNewCredential(user, existingKeys, authenticatorSelection, attType.ToEnum<AttestationConveyancePreference>(), exts);
@@ -113,20 +115,24 @@ namespace Fido2Demo
                 var success = await _fido2.MakeNewCredentialAsync(attestationResponse, options, callback, cancellationToken: cancellationToken);
 
                 // 3. Store the credentials in db
-                DemoStorage.AddCredentialToUser(options.User, new StoredCredential
+                DemoStorage.AddCredentialToUser(options.User, new CredentialRecord
                 {
-                    Descriptor = new PublicKeyCredentialDescriptor(success.Result.CredentialId),
+                    Type = success.Result.Type,
+                    Id = success.Result.Id,
                     PublicKey = success.Result.PublicKey,
+                    SignCount = success.Result.SignCount,
+                    Transports = success.Result.Transports,
+                    BE = success.Result.BE,
+                    BS = success.Result.BS,
+                    AttestationObject = success.Result.AttestationObject,
+                    AttestationClientDataJSON = success.Result.AttestationClientDataJSON,
+                    DevicePublicKeys = new List<byte[]>() { success.Result.DevicePublicKey },
+                    Descriptor = new PublicKeyCredentialDescriptor(success.Result.Id),
                     UserHandle = success.Result.User.Id,
-                    SignatureCounter = success.Result.Counter,
                     CredType = success.Result.CredType,
                     RegDate = DateTime.Now,
                     AaGuid = success.Result.Aaguid
                 });
-
-                // Remove Certificates from success because System.Text.Json cannot serialize them properly. See https://github.com/passwordless-lib/fido2-net-lib/issues/328
-                success.Result.AttestationCertificate = null;
-                success.Result.AttestationCertificateChain = null;
 
                 // 4. return "ok" to the client
                 return Json(success);
@@ -155,8 +161,10 @@ namespace Fido2Demo
                 }
 
                 var exts = new AuthenticationExtensionsClientInputs()
-                { 
-                    UserVerificationMethod = true 
+                {
+                    Extensions = true,
+                    UserVerificationMethod = true,
+                    DevicePubKey = new AuthenticationExtensionsDevicePublicKeyInputs()
                 };
 
                 // 3. Create options
@@ -204,10 +212,13 @@ namespace Fido2Demo
                 };
 
                 // 5. Make the assertion
-                var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey, storedCounter, callback, cancellationToken: cancellationToken);
+                var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey, creds.DevicePublicKeys, storedCounter, callback, cancellationToken: cancellationToken);
 
                 // 6. Store the updated counter
-                DemoStorage.UpdateCounter(res.CredentialId, res.Counter);
+                DemoStorage.UpdateCounter(creds.Id, res.SignCount);
+
+                if (res.DevicePublicKey is not null)
+                    creds.DevicePublicKeys.Add(res.DevicePublicKey);
 
                 // 7. return OK to client
                 return Json(res);

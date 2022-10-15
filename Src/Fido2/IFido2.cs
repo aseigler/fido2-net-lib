@@ -16,6 +16,7 @@ namespace Fido2NetLib
             AuthenticatorAssertionRawResponse assertionResponse,
             AssertionOptions originalOptions,
             byte[] storedPublicKey,
+            List<byte[]> storedDevicePublicKeys,
             uint storedSignatureCounter,
             IsUserHandleOwnerOfCredentialIdAsync isUserHandleOwnerOfCredentialIdCallback,
             byte[]? requestTokenBindingId = null,

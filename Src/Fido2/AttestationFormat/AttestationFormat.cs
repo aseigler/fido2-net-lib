@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 
 using Fido2NetLib.Cbor;
+using Fido2NetLib.Exceptions;
 using Fido2NetLib.Objects;
 
 namespace Fido2NetLib
@@ -19,7 +20,7 @@ namespace Fido2NetLib
         internal CborObject X5c => attStmt["x5c"];
         internal CborObject Alg => attStmt["alg"];
         internal CborObject EcdaaKeyId => attStmt["ecdaaKeyId"];
-        internal AuthenticatorData AuthData => new AuthenticatorData(authenticatorData);
+        internal AuthenticatorData AuthData => new(authenticatorData);
         internal CborMap CredentialPublicKey => AuthData.AttestedCredentialData.CredentialPublicKey.GetCborObject();
         internal byte[] Data => DataHelper.Concat(authenticatorData, clientDataHash);
 
@@ -75,6 +76,21 @@ namespace Fido2NetLib
             }
 
             return u2ftransports;
+        }
+
+        public static AttestationVerifier Create(string fmt)
+        {
+            return fmt switch
+            {
+                "none" => new None(),                           // https://www.w3.org/TR/webauthn/#none-attestation
+                "tpm" => new Tpm(),                             // https://www.w3.org/TR/webauthn/#tpm-attestation
+                "android-key" => new AndroidKey(),              // https://www.w3.org/TR/webauthn/#android-key-attestation
+                "android-safetynet" => new AndroidSafetyNet(),  // https://www.w3.org/TR/webauthn/#android-safetynet-attestation
+                "fido-u2f" => new FidoU2f(),                    // https://www.w3.org/TR/webauthn/#fido-u2f-attestation
+                "packed" => new Packed(),                       // https://www.w3.org/TR/webauthn/#packed-attestation
+                "apple" => new Apple(),                         // https://www.w3.org/TR/webauthn/#apple-anonymous-attestation
+                _ => throw new Fido2VerificationException(Fido2ErrorCode.UnknownAttestationType, $"Unknown attestation type. Was '{fmt}'")
+            };
         }
 
         public virtual (AttestationType, X509Certificate2[]) Verify(CborMap attStmt, byte[] authenticatorData, byte[] clientDataHash)

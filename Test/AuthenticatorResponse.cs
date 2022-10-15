@@ -503,7 +503,7 @@ public class AuthenticatorResponse
 
         var rawResponse = new AuthenticatorAttestationRawResponse
         {
-            Type = null,
+            Type = PublicKeyCredentialType.Invalid,
             Id = new byte[] { 0xf1, 0xd0 },
             RawId = new byte[] { 0xf1, 0xd0 },
             Response = new AuthenticatorAttestationRawResponse.ResponseData()
