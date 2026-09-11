@@ -2,6 +2,8 @@
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 using Fido2NetLib;
 using Fido2NetLib.Exceptions;
@@ -31,6 +33,24 @@ public class MetadataServiceTests
     private sealed class StubHttpClientFactory(HttpMessageHandler handler) : IHttpClientFactory
     {
         public HttpClient CreateClient(string name) => new(handler) { BaseAddress = new Uri("https://mds.example.test") };
+    }
+
+    /// <summary>
+    /// Answers each URL with the bytes registered for it, and records what was asked for.
+    /// </summary>
+    private sealed class UrlMapHttpMessageHandler(IReadOnlyDictionary<string, byte[]> responses) : HttpMessageHandler
+    {
+        public List<string> Requested { get; } = [];
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            string url = request.RequestUri.AbsoluteUri;
+            Requested.Add(url);
+
+            return Task.FromResult(responses.TryGetValue(url, out var body)
+                ? new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(body) }
+                : new HttpResponseMessage(HttpStatusCode.NotFound));
+        }
     }
 
     private static HttpResponseMessage ThrottledResponse(TimeSpan retryAfter)
@@ -153,6 +173,117 @@ public class MetadataServiceTests
 
         Assert.Equal(2, handler.CallCount);
         Assert.False(handler.AnyRequestSentIfNoneMatch);
+    }
+
+    private static X509Chain BuildChain(TestPki pki, X509Certificate2 leaf)
+    {
+        var chain = new X509Chain();
+        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+        chain.ChainPolicy.CustomTrustStore.Add(pki.Root);
+        chain.ChainPolicy.ExtraStore.Add(pki.Intermediate);
+        chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+        Assert.True(chain.Build(leaf));
+        Assert.Equal(3, chain.ChainElements.Count);
+        return chain;
+    }
+
+    [Fact]
+    public async Task Fido2MetadataServiceRepository_Checks_Each_Certificate_Against_The_Crl_Its_Issuer_Signed()
+    {
+        const string leafCrlUrl = "http://crl.example.test/intermediate.crl";
+        const string intermediateCrlUrl = "http://crl.example.test/root.crl";
+
+        using var pki = new TestPki(intermediateCrlDistributionPointUrl: intermediateCrlUrl);
+        using var leaf = pki.IssueLeaf(leafCrlUrl);
+        using var chain = BuildChain(pki, leaf);
+
+        var handler = new UrlMapHttpMessageHandler(new Dictionary<string, byte[]>
+        {
+            [leafCrlUrl] = pki.EmptyCrl,
+            [intermediateCrlUrl] = pki.BuildRootCrl(DateTimeOffset.UtcNow.AddDays(7), revokeIntermediate: false),
+        });
+        var repository = new Fido2MetadataServiceRepository(new StubHttpClientFactory(handler));
+
+        await repository.VerifyNoCertificateIsRevokedAsync(chain, CancellationToken.None);
+
+        // The leaf and the intermediate were each checked once; the root has no issuer to sign a CRL for it
+        Assert.Equal([leafCrlUrl, intermediateCrlUrl], handler.Requested);
+    }
+
+    [Fact]
+    public async Task Fido2MetadataServiceRepository_Skips_Certificates_Without_A_Distribution_Point()
+    {
+        using var pki = new TestPki();
+        using var chain = BuildChain(pki, pki.Leaf);
+
+        var handler = new UrlMapHttpMessageHandler(new Dictionary<string, byte[]>());
+        var repository = new Fido2MetadataServiceRepository(new StubHttpClientFactory(handler));
+
+        await repository.VerifyNoCertificateIsRevokedAsync(chain, CancellationToken.None);
+
+        Assert.Empty(handler.Requested);
+    }
+
+    [Fact]
+    public async Task Fido2MetadataServiceRepository_Rejects_A_Revoked_Certificate()
+    {
+        const string leafCrlUrl = "http://crl.example.test/intermediate.crl";
+        const string intermediateCrlUrl = "http://crl.example.test/root.crl";
+
+        using var pki = new TestPki(intermediateCrlDistributionPointUrl: intermediateCrlUrl);
+        using var leaf = pki.IssueLeaf(leafCrlUrl);
+        using var chain = BuildChain(pki, leaf);
+
+        // The leaf itself is fine, but the CA that issued it has been revoked by the root
+        var handler = new UrlMapHttpMessageHandler(new Dictionary<string, byte[]>
+        {
+            [leafCrlUrl] = pki.EmptyCrl,
+            [intermediateCrlUrl] = pki.BuildRootCrl(DateTimeOffset.UtcNow.AddDays(7), revokeIntermediate: true),
+        });
+        var repository = new Fido2MetadataServiceRepository(new StubHttpClientFactory(handler));
+
+        var ex = await Assert.ThrowsAsync<Fido2VerificationException>(() => repository.VerifyNoCertificateIsRevokedAsync(chain, CancellationToken.None));
+        Assert.Contains(intermediateCrlUrl, ex.Message);
+        Assert.Contains(pki.Intermediate.Subject, ex.Message);
+    }
+
+    [Fact]
+    public async Task Fido2MetadataServiceRepository_Rejects_A_Crl_The_Issuer_Did_Not_Sign()
+    {
+        const string leafCrlUrl = "http://crl.example.test/intermediate.crl";
+
+        using var pki = new TestPki();
+        using var leaf = pki.IssueLeaf(leafCrlUrl);
+        using var chain = BuildChain(pki, leaf);
+
+        // Whoever controls the (plain http) distribution point serves a CRL under the right name but the wrong key
+        using var forger = new TestPki();
+        byte[] forged = pki.CrlRevokingLeaf;
+        forged[^1] ^= 0x01;
+
+        var handler = new UrlMapHttpMessageHandler(new Dictionary<string, byte[]> { [leafCrlUrl] = forged });
+        var repository = new Fido2MetadataServiceRepository(new StubHttpClientFactory(handler));
+
+        var ex = await Assert.ThrowsAsync<Fido2VerificationException>(() => repository.VerifyNoCertificateIsRevokedAsync(chain, CancellationToken.None));
+        Assert.Contains("could not be used", ex.Message);
+        Assert.IsType<CryptographicException>(ex.InnerException);
+    }
+
+    [Fact]
+    public async Task Fido2MetadataServiceRepository_Rejects_A_Stale_Crl()
+    {
+        const string leafCrlUrl = "http://crl.example.test/intermediate.crl";
+
+        using var pki = new TestPki();
+        using var leaf = pki.IssueLeaf(leafCrlUrl);
+        using var chain = BuildChain(pki, leaf);
+
+        // Genuine, but a replay of a CRL that fell due yesterday could hide a revocation since then
+        var handler = new UrlMapHttpMessageHandler(new Dictionary<string, byte[]> { [leafCrlUrl] = pki.BuildCrl(DateTimeOffset.UtcNow.AddDays(-1), revokeLeaf: false) });
+        var repository = new Fido2MetadataServiceRepository(new StubHttpClientFactory(handler));
+
+        var ex = await Assert.ThrowsAsync<Fido2VerificationException>(() => repository.VerifyNoCertificateIsRevokedAsync(chain, CancellationToken.None));
+        Assert.Contains("stale", ex.Message);
     }
 
     [Fact]

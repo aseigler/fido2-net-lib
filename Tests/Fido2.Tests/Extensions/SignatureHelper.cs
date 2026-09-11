@@ -1,25 +1,14 @@
-﻿using System.Formats.Asn1;
+﻿using System.Security.Cryptography;
 
 namespace fido2_net_lib;
 
 internal static class SignatureHelper
 {
-    public static byte[] EcDsaSigFromSig(ReadOnlySpan<byte> sig, int keySizeInBits)
+    /// <summary>
+    /// Signs <paramref name="data"/> in the DER Ecdsa-Sig-Value form WebAuthn §6.5.6 requires of ECDSA signatures.
+    /// </summary>
+    public static byte[] SignEcDsa(ECDsa ecdsa, ReadOnlySpan<byte> data, HashAlgorithmName hashAlgorithm)
     {
-        var coefficientSize = (int)Math.Ceiling((decimal)keySizeInBits / 8);
-        var r = sig.Slice(0, coefficientSize);
-        var s = sig.Slice(sig.Length - coefficientSize);
-
-        var writer = new AsnWriter(AsnEncodingRules.BER);
-
-        ReadOnlySpan<byte> zero = [0];
-
-        using (writer.PushSequence())
-        {
-            writer.WriteIntegerUnsigned(r.TrimStart(zero));
-            writer.WriteIntegerUnsigned(s.TrimStart(zero));
-        }
-
-        return writer.Encode();
+        return ecdsa.SignData(data, hashAlgorithm, DSASignatureFormat.Rfc3279DerSequence);
     }
 }

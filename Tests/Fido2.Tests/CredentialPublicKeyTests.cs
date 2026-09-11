@@ -24,7 +24,7 @@ public class CredentialPublicKeyTests
 
         using var ecDsa = ECDsa.Create(ECCurve.CreateFromValue(oid));
 
-        var signature = SignatureHelper.EcDsaSigFromSig(ecDsa.SignData(signedData, CryptoUtils.HashAlgFromCOSEAlg(alg)), ecDsa.KeySize);
+        var signature = SignatureHelper.SignEcDsa(ecDsa, signedData, CryptoUtils.HashAlgFromCOSEAlg(alg));
 
         var credentialPublicKey = new CredentialPublicKey(ecDsa, alg);
 

@@ -174,17 +174,8 @@ internal sealed class AndroidKey : AttestationVerifier
         X509Certificate2 androidKeyCert = trustPath[0];
         ECDsa androidKeyPubKey = androidKeyCert.GetECDsaPublicKey()!; // attestation public key
 
-        byte[] ecSignature;
-        try
-        {
-            ecSignature = CryptoUtils.SigFromEcDsaSig(sig, androidKeyPubKey.KeySize);
-        }
-        catch (Exception ex)
-        {
-            throw new Fido2VerificationException(Fido2ErrorCode.InvalidAttestation, "Failed to decode android key attestation signature from ASN.1 encoded form", ex);
-        }
-
-        if (!androidKeyPubKey.VerifyData(request.Data, ecSignature, CryptoUtils.HashAlgFromCOSEAlg(alg)))
+        // The signature is the DER Ecdsa-Sig-Value of WebAuthn §6.5.6; a malformed one simply fails to verify.
+        if (!androidKeyPubKey.VerifyData(request.Data, sig, CryptoUtils.HashAlgFromCOSEAlg(alg), DSASignatureFormat.Rfc3279DerSequence))
             throw new Fido2VerificationException(Fido2ErrorCode.InvalidAttestation, Fido2ErrorMessages.InvalidAndroidKeyAttestationSignature);
 
         // 3. Verify that the public key in the first certificate in x5c matches the credentialPublicKey in the attestedCredentialData in authenticatorData.

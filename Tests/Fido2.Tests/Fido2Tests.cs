@@ -321,8 +321,7 @@ public class Fido2Tests
                     {
                         var ecParams = ecdsa.ExportParameters(true);
                         _credentialPublicKey = MakeCredentialPublicKey(kty, alg, curve, ecParams.Q.X, ecParams.Q.Y);
-                        var signature = ecdsa.SignData(_attToBeSigned, CryptoUtils.HashAlgFromCOSEAlg(alg));
-                        return SignatureHelper.EcDsaSigFromSig(signature, ecdsa.KeySize);
+                        return SignatureHelper.SignEcDsa(ecdsa, _attToBeSigned, CryptoUtils.HashAlgFromCOSEAlg(alg));
                     }
                 case COSE.KeyType.RSA:
                     {
@@ -367,8 +366,7 @@ public class Fido2Tests
         {
             case COSE.KeyType.EC2:
                 {
-                    var signature = ecdsa.SignData(data, CryptoUtils.HashAlgFromCOSEAlg(alg));
-                    return SignatureHelper.EcDsaSigFromSig(signature, ecdsa.KeySize);
+                    return SignatureHelper.SignEcDsa(ecdsa, data, CryptoUtils.HashAlgFromCOSEAlg(alg));
                 }
             case COSE.KeyType.RSA:
                 {

@@ -204,17 +204,6 @@ public sealed class ConformanceMetadataRepository : IMetadataRepository
         // if the root is trusted in the context we are running in, valid should be true here
         if (!certChainIsValid)
         {
-            foreach (var element in certChain.ChainElements)
-            {
-                if (element.Certificate.Issuer != element.Certificate.Subject)
-                {
-                    var cdp = CryptoUtils.CDPFromCertificateExts(element.Certificate.Extensions);
-                    var crlFile = await DownloadDataAsync(cdp, cancellationToken);
-                    if (CryptoUtils.IsCertInCRL(crlFile, element.Certificate))
-                        throw new Fido2VerificationException($"Cert {element.Certificate.Subject} found in CRL {cdp}");
-                }
-            }
-
             // otherwise we have to manually validate that the root in the chain we are testing is the root we downloaded
             if (rootCert.Thumbprint.Equals(certChain.ChainElements[^1].Certificate.Thumbprint, StringComparison.Ordinal) &&
                 // and that the number of elements in the chain accounts for what was in x5c plus the root we added
@@ -235,6 +224,33 @@ public sealed class ConformanceMetadataRepository : IMetadataRepository
 
         if (!certChainIsValid)
             throw new Fido2VerificationException("Failed to validate cert chain while parsing BLOB");
+
+        // The chain now ends at the conformance root, so every other certificate has its issuer, which must have
+        // signed its CRL, directly above it. The conformance tool's CRLs are not checked for freshness: the ones it
+        // serves carry a fixed nextUpdate that has long since passed.
+        for (int i = 0; i < certChain.ChainElements.Count - 1; i++)
+        {
+            var certificate = certChain.ChainElements[i].Certificate;
+            var issuer = certChain.ChainElements[i + 1].Certificate;
+
+            if (!CryptoUtils.TryGetCrlDistributionPointUrl(certificate, out var cdp))
+                continue;
+
+            var crlFile = await DownloadDataAsync(cdp, cancellationToken);
+
+            bool isRevoked;
+            try
+            {
+                isRevoked = CryptoUtils.IsCertInCRL(crlFile, certificate, issuer);
+            }
+            catch (CryptographicException ex)
+            {
+                throw new Fido2VerificationException($"The CRL at {cdp} could not be used to check {certificate.Subject}: {ex.Message}", ex);
+            }
+
+            if (isRevoked)
+                throw new Fido2VerificationException($"Cert {certificate.Subject} found in CRL {cdp}");
+        }
 
         var blobPayload = ((JsonWebToken)validateTokenResult.SecurityToken).EncodedPayload;
 

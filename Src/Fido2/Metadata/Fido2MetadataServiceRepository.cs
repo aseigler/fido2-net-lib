@@ -265,17 +265,6 @@ public sealed class Fido2MetadataServiceRepository(IHttpClientFactory httpClient
 
         var certChainIsValid = certChain.Build(blobCerts[0]);
 
-        // MDS 3.1.1 §3.2: "All certificates in the chain MUST be checked for revocation", and the FIDO Server
-        // SHOULD ignore the BLOB if one of them is revoked. The requirement is scoped to the BLOB payload
-        // certificates -- CRL checking for the certificates inside individual metadata statements is left to
-        // the server vendor.
-        //
-        // The chain is built with RevocationMode.NoCheck because the CRLs live at the MDS CRL location rather
-        // than wherever the platform would look, so this is done explicitly. It has to happen whether or not
-        // Build() succeeded: the BLOB signing root is a public GlobalSign root that most platform trust stores
-        // already carry, which makes the success path the common one, and it used to skip revocation entirely.
-        await VerifyNoCertificateIsRevokedAsync(certChain, cancellationToken);
-
         // if the root is trusted in the context we are running in, valid should be true here
         if (!certChainIsValid)
         {
@@ -302,6 +291,19 @@ public sealed class Fido2MetadataServiceRepository(IHttpClientFactory httpClient
 
         if (!certChainIsValid)
             throw new Fido2VerificationException("Failed to validate cert chain while parsing BLOB");
+
+        // MDS 3.1.1 §3.2: "All certificates in the chain MUST be checked for revocation", and the FIDO Server
+        // SHOULD ignore the BLOB if one of them is revoked. The requirement is scoped to the BLOB payload
+        // certificates -- CRL checking for the certificates inside individual metadata statements is left to
+        // the server vendor.
+        //
+        // The chain is built with RevocationMode.NoCheck because the CRLs live at the MDS CRL location rather
+        // than wherever the platform would look, so this is done explicitly. It has to happen whether or not
+        // Build() succeeded: the BLOB signing root is a public GlobalSign root that most platform trust stores
+        // already carry, which makes the success path the common one, and it used to skip revocation entirely.
+        // It comes after the chain is known to end at the MDS root so that every other certificate has the
+        // issuer that must have signed its CRL sitting directly above it.
+        await VerifyNoCertificateIsRevokedAsync(certChain, cancellationToken);
 
         var blobPayload = ((JsonWebToken)validateTokenResult.SecurityToken).EncodedPayload;
 
@@ -384,27 +386,40 @@ public sealed class Fido2MetadataServiceRepository(IHttpClientFactory httpClient
     }
 
     /// <summary>
-    /// Checks every non-self-issued certificate in the chain against the CRL its distribution point names.
+    /// Checks every certificate in the chain, other than the root, against the CRL its distribution point names.
     /// </summary>
-    private async Task VerifyNoCertificateIsRevokedAsync(X509Chain certChain, CancellationToken cancellationToken)
+    /// <remarks>
+    /// The distribution points are plain http:// URLs, so the CRL itself proves nothing until its signature has been
+    /// verified against the issuing certificate, which is the next element up the chain. A CRL that cannot be
+    /// verified, or that is past its nextUpdate time, is treated like a CRL that could not be fetched.
+    /// </remarks>
+    internal async Task VerifyNoCertificateIsRevokedAsync(X509Chain certChain, CancellationToken cancellationToken)
     {
-        foreach (var element in certChain.ChainElements)
+        // The last element is the root: it has no issuer above it, and no CRL of its own covers it.
+        for (int i = 0; i < certChain.ChainElements.Count - 1; i++)
         {
-            // A self-issued certificate is the trust anchor, which no CRL of its own covers.
-            if (element.Certificate.Issuer == element.Certificate.Subject)
-                continue;
-
-            var cdp = CryptoUtils.CDPFromCertificateExts(element.Certificate.Extensions);
+            var certificate = certChain.ChainElements[i].Certificate;
+            var issuer = certChain.ChainElements[i + 1].Certificate;
 
             // Nothing names a CRL for this certificate, so there is nothing to check it against.
-            if (string.IsNullOrEmpty(cdp))
+            if (!CryptoUtils.TryGetCrlDistributionPointUrl(certificate, out var cdp))
                 continue;
 
             using var client = _httpClientFactory.CreateClient();
             var crlFile = await client.GetByteArrayAsync(cdp, cancellationToken);
 
-            if (CryptoUtils.IsCertInCRL(crlFile, element.Certificate))
-                throw new Fido2VerificationException($"Cert {element.Certificate.Subject} found in CRL {cdp}");
+            bool isRevoked;
+            try
+            {
+                isRevoked = CryptoUtils.IsCertInCRL(crlFile, certificate, issuer, DateTimeOffset.UtcNow);
+            }
+            catch (CryptographicException ex)
+            {
+                throw new Fido2VerificationException($"The CRL at {cdp} could not be used to check {certificate.Subject}: {ex.Message}", ex);
+            }
+
+            if (isRevoked)
+                throw new Fido2VerificationException($"Cert {certificate.Subject} found in CRL {cdp}");
         }
     }
 }
