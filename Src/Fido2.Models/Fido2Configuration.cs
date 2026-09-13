@@ -5,6 +5,9 @@ using System.Text.Json.Serialization;
 
 namespace Fido2NetLib;
 
+/// <summary>
+/// The relying party's settings: its identity (RP ID, name, origins), ceremony timeout, and the policies verification enforces.
+/// </summary>
 public class Fido2Configuration
 {
     private IReadOnlySet<string> _origins;
@@ -126,6 +129,9 @@ public class Fido2Configuration
     /// </summary>
     public CredentialBackupPolicy BackedUpCredentialPolicy { get; set; } = CredentialBackupPolicy.Allowed;
 
+    /// <summary>
+    /// What the relying party requires of a credential's backup eligibility (BE) and backup state (BS) flags.
+    /// </summary>
 #if NET9_0_OR_GREATER
     [JsonConverter(typeof(JsonStringEnumConverter<CredentialBackupPolicy>))]
 #else

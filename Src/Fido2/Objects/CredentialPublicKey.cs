@@ -9,6 +9,9 @@ using NSec.Cryptography;
 
 namespace Fido2NetLib.Objects;
 
+/// <summary>
+/// A credential's public key in COSE_Key form (RFC 9052), as carried in attested credential data. Verifies signatures under the key's algorithm.
+/// </summary>
 public sealed class CredentialPublicKey
 {
     internal readonly COSE.KeyType _type;
@@ -18,9 +21,17 @@ public sealed class CredentialPublicKey
     internal readonly RSA? _rsa;
     internal readonly NSec.Cryptography.PublicKey? _eddsa;
 
+    /// <summary>
+    /// Decodes a COSE_Key.
+    /// </summary>
+    /// <exception cref="Fido2VerificationException">The key's type, algorithm or curve is not one the library supports.</exception>
     public CredentialPublicKey(byte[] cpk)
         : this((CborMap)CborObject.Decode(cpk)) { }
 
+    /// <summary>
+    /// Reads a COSE_Key map.
+    /// </summary>
+    /// <exception cref="Fido2VerificationException">The key's type, algorithm or curve is not one the library supports.</exception>
     public CredentialPublicKey(CborMap cpk)
     {
         _cpk = cpk;
@@ -47,6 +58,9 @@ public sealed class CredentialPublicKey
         throw new InvalidOperationException($"Missing or unknown kty {_type}");
     }
 
+    /// <summary>
+    /// Wraps an ECDSA public key as a COSE_Key for the given algorithm.
+    /// </summary>
     public CredentialPublicKey(ECDsa ecdsaPublicKey, COSE.Algorithm alg)
     {
         _type = COSE.KeyType.EC2;
@@ -65,6 +79,10 @@ public sealed class CredentialPublicKey
         _ecdsa = CreateECDsa();
     }
 
+    /// <summary>
+    /// Wraps the public key of a certificate as a COSE_Key for the given algorithm.
+    /// </summary>
+    /// <exception cref="Fido2VerificationException">The certificate's key is of a type the library does not support.</exception>
     public CredentialPublicKey(X509Certificate2 cert, COSE.Algorithm alg)
     {
         var keyAlg = cert.GetKeyAlgorithm();
@@ -108,6 +126,10 @@ public sealed class CredentialPublicKey
         }
     }
 
+    /// <summary>
+    /// Verifies a signature over <paramref name="data"/> under the key's algorithm. ECDSA signatures are expected in the DER form authenticators produce.
+    /// </summary>
+    /// <exception cref="Fido2VerificationException">The signature is not well-formed for the algorithm.</exception>
     public bool Verify(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature)
     {
         switch (_type)
@@ -147,6 +169,10 @@ public sealed class CredentialPublicKey
         });
     }
 
+    /// <summary>
+    /// The key as an <see cref="ECDsa"/>.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The key is not an EC2 key.</exception>
     public ECDsa CreateECDsa()
     {
         if (_type != COSE.KeyType.EC2)
@@ -253,6 +279,10 @@ public sealed class CredentialPublicKey
         }
     }
 
+    /// <summary>
+    /// Decodes a COSE_Key from the start of <paramref name="cpk"/>, reporting how many bytes it occupied.
+    /// </summary>
+    /// <exception cref="Fido2VerificationException">The key's type, algorithm or curve is not one the library supports.</exception>
     public static CredentialPublicKey Decode(ReadOnlyMemory<byte> cpk, out int bytesRead)
     {
         var map = (CborMap)CborObject.Decode(cpk, out bytesRead);
@@ -260,9 +290,18 @@ public sealed class CredentialPublicKey
         return new CredentialPublicKey(map);
     }
 
+    /// <summary>
+    /// The key encoded as a COSE_Key, for storage.
+    /// </summary>
     public byte[] GetBytes() => _cpk.Encode();
 
+    /// <summary>
+    /// Whether the key's algorithm is <paramref name="alg"/>.
+    /// </summary>
     public bool IsSameAlg(COSE.Algorithm alg) => _alg.Equals(alg);
 
+    /// <summary>
+    /// The key as the COSE_Key map it was decoded from.
+    /// </summary>
     public CborMap GetCborObject() => _cpk;
 }

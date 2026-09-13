@@ -52,8 +52,10 @@ public sealed class AuthenticatorBioEnrollmentCommand(
     [CborMember(0x06)]
     public bool? GetModality { get; } = getModality;
 
+    /// <inheritdoc/>
     public override CtapCommandType Type => CtapCommandType.AuthenticatorBioEnrollment;
 
+    /// <inheritdoc/>
     protected override CborObject? GetParameters()
     {
         var cbor = new CborMap();
@@ -92,20 +94,50 @@ public sealed class AuthenticatorBioEnrollmentCommand(
     }
 }
 
+/// <summary>
+/// The kinds of biometric an authenticator can enroll (CTAP 2.3 §6.7).
+/// </summary>
 public enum AuthenticatorBioEnrollmentModality
 {
+    /// <summary>
+    /// A fingerprint.
+    /// </summary>
     Fingerprint = 0x01,
 }
 
+/// <summary>
+/// The operations of authenticatorBioEnrollment (CTAP 2.3 §6.7).
+/// </summary>
 public enum AuthenticatorBioEnrollmentSubCommand
 {
     #pragma warning disable format
+    /// <summary>
+    /// Starts enrolling a new template and captures its first sample.
+    /// </summary>
     EnrollBegin              = 0x01,
+    /// <summary>
+    /// Captures another sample for the template being enrolled.
+    /// </summary>
     EnrollCaptureNextSample  = 0x02,
+    /// <summary>
+    /// Abandons the enrollment in progress.
+    /// </summary>
     CancelCurrentEnrollment  = 0x03,
+    /// <summary>
+    /// Lists the enrolled templates.
+    /// </summary>
     EnumerateEnrollments     = 0x04,
+    /// <summary>
+    /// Renames an enrolled template.
+    /// </summary>
     SetFriendlyName          = 0x05,
+    /// <summary>
+    /// Deletes an enrolled template.
+    /// </summary>
     RemoveEnrollment         = 0x06,
+    /// <summary>
+    /// Reports the sensor's kind and how many samples an enrollment needs.
+    /// </summary>
     GetFingerprintSensorInfo = 0x07,
     #pragma warning restore format
 }

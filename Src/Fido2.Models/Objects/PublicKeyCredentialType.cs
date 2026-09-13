@@ -14,12 +14,18 @@ namespace Fido2NetLib.Objects;
 #endif
 public enum PublicKeyCredentialType
 {
+    /// <summary>
+    /// A public key credential; the only type WebAuthn defines.
+    /// </summary>
 #if NET9_0_OR_GREATER
     [JsonStringEnumMemberName("public-key")]
 #endif
     [EnumMember(Value = "public-key")]
     PublicKey,
 
+    /// <summary>
+    /// Not a WebAuthn credential type. Used in tests to exercise rejection of an unknown type.
+    /// </summary>
 #if NET9_0_OR_GREATER
     [JsonStringEnumMemberName("invalid")]
 #endif

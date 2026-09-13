@@ -3,6 +3,9 @@ using Fido2NetLib.Objects;
 
 namespace Fido2NetLib.Ctap2;
 
+/// <summary>
+/// The response of an authenticatorClientPIN operation (CTAP 2.3 §6.5); which members are set depends on the operation.
+/// </summary>
 public sealed class AuthenticatorClientPinResponse
 {
     /// <summary>
@@ -40,6 +43,9 @@ public sealed class AuthenticatorClientPinResponse
     [CborMember(0x05)]
     public int? UVRetries { get; set; }
 
+    /// <summary>
+    /// Decodes the response map of an authenticatorClientPIN operation.
+    /// </summary>
     public static AuthenticatorClientPinResponse FromCborObject(CborObject cbor)
     {
         var result = new AuthenticatorClientPinResponse();

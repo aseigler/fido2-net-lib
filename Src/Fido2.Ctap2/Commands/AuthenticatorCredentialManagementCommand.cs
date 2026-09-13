@@ -40,8 +40,10 @@ public sealed class AuthenticatorCredentialManagementCommand(
     [CborMember(0x04)]
     public byte[]? PinUvAuthParam { get; } = pinUvAuthParam;
 
+    /// <inheritdoc/>
     public override CtapCommandType Type => CtapCommandType.AuthenticatorCredentialManagement;
 
+    /// <inheritdoc/>
     protected override CborObject? GetParameters()
     {
         var cbor = new CborMap
@@ -68,15 +70,39 @@ public sealed class AuthenticatorCredentialManagementCommand(
     }
 }
 
+/// <summary>
+/// The operations of authenticatorCredentialManagement (CTAP 2.3 §6.8), which manage the discoverable credentials on the authenticator.
+/// </summary>
 public enum AuthenticatorCredentialManagementSubCommand
 {
     #pragma warning disable format
+    /// <summary>
+    /// Reports how many discoverable credentials exist and how many more fit.
+    /// </summary>
     GetCredsMetadata                      = 0x01,
+    /// <summary>
+    /// Starts listing the relying parties with discoverable credentials, returning the first.
+    /// </summary>
     EnumerateRPsBegin                     = 0x02,
+    /// <summary>
+    /// Returns the next relying party in the listing.
+    /// </summary>
     EnumerateRPsGetNextRP                 = 0x03,
+    /// <summary>
+    /// Starts listing one relying party's credentials, returning the first.
+    /// </summary>
     EnumerateCredentialsBegin             = 0x04,
+    /// <summary>
+    /// Returns the next credential in the listing.
+    /// </summary>
     EnumerateCredentialsGetNextCredential = 0x05,
+    /// <summary>
+    /// Deletes a credential.
+    /// </summary>
     DeleteCredential                      = 0x06,
+    /// <summary>
+    /// Replaces the user name and display name stored with a credential.
+    /// </summary>
     UpdateUserInformation                 = 0x07,
     #pragma warning restore format
 }

@@ -15,6 +15,11 @@ public class Fido2 : IFido2
     private readonly Fido2Configuration _config;
     private readonly IMetadataService? _metadataService;
 
+    /// <summary>
+    /// Initializes the library for one relying party.
+    /// </summary>
+    /// <param name="config">The relying party's settings.</param>
+    /// <param name="metadataService">Where to look authenticators up during registration, or <see langword="null"/> to skip metadata checks.</param>
     public Fido2(
         Fido2Configuration config,
         IMetadataService? metadataService = null)
@@ -62,6 +67,12 @@ public class Fido2 : IFido2
         return AssertionOptions.Create(_config, challenge, getAssertionOptionsParams.AllowedCredentials, getAssertionOptionsParams.UserVerification, getAssertionOptionsParams.Extensions);
     }
 
+    /// <summary>
+    /// Returns AssertionOptions including a challenge to be sent to the browser/authenticator to authenticate a user.
+    /// </summary>
+    /// <param name="allowedCredentials">The credentials the user may authenticate with, most preferred first. Leave empty for a discoverable-credential (usernameless) ceremony.</param>
+    /// <param name="userVerification">The RP's user verification requirement, or <see langword="null"/> for the client default.</param>
+    /// <param name="extensions">Client extension inputs, or <see langword="null"/> for none.</param>
     public AssertionOptions GetAssertionOptions(
         IReadOnlyList<PublicKeyCredentialDescriptor> allowedCredentials,
         UserVerificationRequirement? userVerification,

@@ -19,6 +19,9 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Fido2NetLib;
 
+/// <summary>
+/// Fetches metadata from the FIDO conformance tool's MDS3 endpoints, which are provisioned per relying party origin. Only for running the conformance tests.
+/// </summary>
 public sealed class ConformanceMetadataRepository : IMetadataRepository
 {
     private static ReadOnlySpan<byte> ROOT_CERT =>
@@ -42,17 +45,24 @@ public sealed class ConformanceMetadataRepository : IMetadataRepository
 
     private readonly string _getEndpointsUrl = "https://mds3.fido.tools/getEndpoints";
 
+    /// <summary>
+    /// Initializes the repository.
+    /// </summary>
+    /// <param name="client">The client to fetch with, or <see langword="null"/> for a default one.</param>
+    /// <param name="origin">The relying party's origin, as registered with the conformance tool.</param>
     public ConformanceMetadataRepository(HttpClient? client, string origin)
     {
         _httpClient = client ?? new HttpClient();
         _origin = origin;
     }
 
+    /// <inheritdoc/>
     public Task<MetadataStatement?> GetMetadataStatementAsync(MetadataBLOBPayload blob, MetadataBLOBPayloadEntry entry, CancellationToken cancellationToken = default)
     {
         return Task.FromResult<MetadataStatement?>(entry.MetadataStatement);
     }
 
+    /// <inheritdoc/>
     public async Task<MetadataBLOBPayload> GetBLOBAsync(CancellationToken cancellationToken = default)
     {
         var req = new GetBLOBRequest(_origin);
@@ -125,6 +135,10 @@ public sealed class ConformanceMetadataRepository : IMetadataRepository
         return _httpClient.GetByteArrayAsync(url, cancellationToken);
     }
 
+    /// <summary>
+    /// Verifies a metadata BLOB JWT against the conformance tool's root and returns its payload.
+    /// </summary>
+    /// <exception cref="Fido2MetadataException">The JWT does not verify.</exception>
     public async Task<MetadataBLOBPayload> DeserializeAndValidateBlobAsync(string rawBLOBJwt, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rawBLOBJwt);

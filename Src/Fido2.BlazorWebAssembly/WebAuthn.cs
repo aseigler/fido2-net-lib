@@ -12,6 +12,9 @@ public class WebAuthn
     private IJSObjectReference _jsModule = null!;
     private readonly Task _initializer;
 
+    /// <summary>
+    /// Initializes the module over the app's JavaScript runtime. Resolve it from DI rather than constructing it.
+    /// </summary>
     public WebAuthn(IJSRuntime js)
     {
         _initializer = Task.Run(async () =>
@@ -47,6 +50,9 @@ public class WebAuthn
         await _jsModule.InvokeAsync<AuthenticatorAssertionRawResponse>("verify", options);
 }
 
+/// <summary>
+/// Registers the <see cref="WebAuthn"/> service.
+/// </summary>
 public static class DependencyInjection
 {
     /// <summary>

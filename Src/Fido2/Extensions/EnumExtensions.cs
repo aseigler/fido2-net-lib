@@ -3,6 +3,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Fido2NetLib;
 
+/// <summary>
+/// Conversions between enums and the wire names their members declare.
+/// </summary>
 public static class EnumExtensions
 {
     /// <summary>

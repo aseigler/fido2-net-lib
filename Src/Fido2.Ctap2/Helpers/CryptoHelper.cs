@@ -4,6 +4,9 @@ using Fido2NetLib.Objects;
 
 namespace Fido2NetLib.Ctap2;
 
+/// <summary>
+/// The cryptography behind the PIN/UV auth protocols: ECDH key agreement and the padding they apply.
+/// </summary>
 public static class CryptoHelper
 {
     internal static ReadOnlySpan<byte> DefaultIV => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -18,6 +21,11 @@ public static class CryptoHelper
         return aes.EncryptCbc(data, iv: DefaultIV, PaddingMode.None);
     }
 
+    /// <summary>
+    /// Performs ECDH on P-256 with the authenticator's key-agreement key and a fresh platform key, returning the shared point's x-coordinate and the platform's public key to send back.
+    /// </summary>
+    /// <param name="authenticatorKeyAgreementKey">The key from authenticatorClientPIN getKeyAgreement.</param>
+    /// <param name="platformKeyAgreementKey">The platform's ephemeral public key, to send as the command's keyAgreement.</param>
     public static byte[] GenerateSharedSecret(CredentialPublicKey authenticatorKeyAgreementKey, out CredentialPublicKey platformKeyAgreementKey)
     {
         using var authenticatorKey = authenticatorKeyAgreementKey.CreateECDsa(); // public key
@@ -64,6 +72,9 @@ public static class CryptoHelper
         return HMACSHA256.HashData(pinUvAuthToken, message).AsSpan(0, 16).ToArray();
     }
 
+    /// <summary>
+    /// Pads <paramref name="value"/> with trailing zeros to <paramref name="length"/> bytes, as a PIN is before encryption; a value already at least that long is returned as is.
+    /// </summary>
     public static byte[] ZeroPadRight(byte[] value, int length)
     {
         if (value.Length < length)

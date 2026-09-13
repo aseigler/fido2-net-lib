@@ -11,58 +11,220 @@
 #pragma warning disable format
 public enum CtapStatusCode
 {
-    OK                              = 0x00, // Indicates successful response
-    CTAP1_ERR_INVALID_COMMAND       = 0x01, // The command is not a valid CTAP command
-    CTAP1_ERR_INVALID_PARAMETER     = 0x02, // The command included an invalid parameter
-    CTAP1_ERR_INVALID_LENGTH        = 0x03, // Invalid message or item length
-    CTAP1_ERR_INVALID_SEQ           = 0x04, // Invalid message sequencing
-    CTAP1_ERR_TIMEOUT               = 0x05, // Message timed out
-    CTAP1_ERR_CHANNEL_BUSY          = 0x06, // Channel busy
-    CTAP1_ERR_LOCK_REQUIRED         = 0x0A, // Command requires channel lock
-    CTAP1_ERR_INVALID_CHANNEL       = 0x0B, // Command not allowed on this cid
-    CTAP2_ERR_CBOR_UNEXPECTED_TYPE  = 0x11, // Invalid/unexpected CBOR error
-    CTAP2_ERR_INVALID_CBOR          = 0x12, // Error when parsing CBOR
-    CTAP2_ERR_MISSING_PARAMETER     = 0x14, // Missing non-optional parameter
-    CTAP2_ERR_LIMIT_EXCEEDED        = 0x15, // Limit for number of items exceeded
-    CTAP2_ERR_UNSUPPORTED_EXTENSION = 0x16, // Unsupported extension. CTAP 2.0 only; absent from the CTAP 2.3 table
-    CTAP2_ERR_FP_DATABASE_FULL      = 0x17, // Fingerprint database is full, e.g. during enrollment
-    CTAP2_ERR_LARGE_BLOB_STORAGE_FULL = 0x18, // Large blob storage is full
-    CTAP2_ERR_CREDENTIAL_EXCLUDED   = 0x19, // Valid credential found in the exclude list
-    CTAP2_ERR_PROCESSING            = 0x21, // Processing (Lengthy operation is in progress)
-    CTAP2_ERR_INVALID_CREDENTIAL    = 0x22, // Credential not valid for the authenticator
-    CTAP2_ERR_USER_ACTION_PENDING   = 0x23, // Authentication is waiting for user interaction
-    CTAP2_ERR_OPERATION_PENDING     = 0x24, // Processing, lengthy operation is in progress
-    CTAP2_ERR_NO_OPERATIONS         = 0x25, // No request is pending
-    CTAP2_ERR_UNSUPPORTED_ALGORITHM = 0x26, // Authenticator does not support requested algorithm
-    CTAP2_ERR_OPERATION_DENIED      = 0x27, // Not authorized for requested operation
-    CTAP2_ERR_KEY_STORE_FULL        = 0x28, // Internal key storage is full
-    CTAP2_ERR_NO_OPERATION_PENDING  = 0x2A, // No outstanding operations. CTAP 2.0 only; absent from the CTAP 2.3 table
-    CTAP2_ERR_UNSUPPORTED_OPTION    = 0x2B, // Unsupported option
-    CTAP2_ERR_INVALID_OPTION        = 0x2C, // Not a valid option for current operation
-    CTAP2_ERR_KEEPALIVE_CANCEL      = 0x2D, // Pending keep alive was cancelled
-    CTAP2_ERR_NO_CREDENTIALS        = 0x2E, // No valid credentials provided
-    CTAP2_ERR_USER_ACTION_TIMEOUT   = 0x2F, // Timeout waiting for user interaction
-    CTAP2_ERR_NOT_ALLOWED           = 0x30, // Continuation command, such as, authenticatorGetNextAssertion not allowed
-    CTAP2_ERR_PIN_INVALID           = 0x31, // PIN Invalid
-    CTAP2_ERR_PIN_BLOCKED           = 0x32, // PIN Blocked
-    CTAP2_ERR_PIN_AUTH_INVALID      = 0x33, // PIN authentication,pinUvAuthParam, verification failed
-    CTAP2_ERR_PIN_AUTH_BLOCKED      = 0x34, // PIN authentication using pinUvAuthToken blocked. Requires power cycle to reset
-    CTAP2_ERR_PIN_NOT_SET           = 0x35, // No PIN has been set
-    CTAP2_ERR_PUAT_REQUIRED         = 0x36, // A pinUvAuthToken is required for the selected operation (CTAP 2.0 named this CTAP2_ERR_PIN_REQUIRED)
-    CTAP2_ERR_PIN_POLICY_VIOLATION  = 0x37, // PIN policy violation. Currently only enforces minimum length
-    CTAP2_ERR_PIN_TOKEN_EXPIRED     = 0x38, // pinToken expired. CTAP 2.0 only; 0x38 is reserved for future use in CTAP 2.3
-    CTAP2_ERR_REQUEST_TOO_LARGE     = 0x39, // Authenticator cannot handle this request due to memory constraints
-    CTAP2_ERR_ACTION_TIMEOUT        = 0x3A, // The current operation has timed out
-    CTAP2_ERR_UP_REQUIRED           = 0x3B, // User presence is required for the requested operation
-    CTAP2_ERR_UV_BLOCKED            = 0x3C, // built-in user verification is blocked
-    CTAP2_ERR_INTEGRITY_FAILURE     = 0x3D, // A checksum did not match
-    CTAP2_ERR_INVALID_SUBCOMMAND    = 0x3E, // The requested subcommand is either invalid or not implemented
-    CTAP2_ERR_UV_INVALID            = 0x3F, // built-in user verification unsuccessful. The platform SHOULD retry
-    CTAP2_ERR_UNAUTHORIZED_PERMISSION = 0x40, // The permission set has not been granted for the pinUvAuthToken
-    CTAP1_ERR_OTHER                 = 0x7F, // Other unspecified error
-    CTAP2_ERR_SPEC_LAST             = 0xDF, // CTAP 2 spec last error
-    CTAP2_ERR_EXTENSION_FIRST       = 0xE0, // Extension specific error
-    CTAP2_ERR_EXTENSION_LAST        = 0xEF, // Extension specific error
-    CTAP2_ERR_VENDOR_FIRST          = 0xF0, // Vendor specific error
-    CTAP2_ERR_VENDOR_LAST           = 0xFF, // Vendor specific error
+    /// <summary>
+    /// Indicates successful response.
+    /// </summary>
+    OK                              = 0x00,
+    /// <summary>
+    /// The command is not a valid CTAP command.
+    /// </summary>
+    CTAP1_ERR_INVALID_COMMAND       = 0x01,
+    /// <summary>
+    /// The command included an invalid parameter.
+    /// </summary>
+    CTAP1_ERR_INVALID_PARAMETER     = 0x02,
+    /// <summary>
+    /// Invalid message or item length.
+    /// </summary>
+    CTAP1_ERR_INVALID_LENGTH        = 0x03,
+    /// <summary>
+    /// Invalid message sequencing.
+    /// </summary>
+    CTAP1_ERR_INVALID_SEQ           = 0x04,
+    /// <summary>
+    /// Message timed out.
+    /// </summary>
+    CTAP1_ERR_TIMEOUT               = 0x05,
+    /// <summary>
+    /// Channel busy.
+    /// </summary>
+    CTAP1_ERR_CHANNEL_BUSY          = 0x06,
+    /// <summary>
+    /// Command requires channel lock.
+    /// </summary>
+    CTAP1_ERR_LOCK_REQUIRED         = 0x0A,
+    /// <summary>
+    /// Command not allowed on this cid.
+    /// </summary>
+    CTAP1_ERR_INVALID_CHANNEL       = 0x0B,
+    /// <summary>
+    /// Invalid/unexpected CBOR error.
+    /// </summary>
+    CTAP2_ERR_CBOR_UNEXPECTED_TYPE  = 0x11,
+    /// <summary>
+    /// Error when parsing CBOR.
+    /// </summary>
+    CTAP2_ERR_INVALID_CBOR          = 0x12,
+    /// <summary>
+    /// Missing non-optional parameter.
+    /// </summary>
+    CTAP2_ERR_MISSING_PARAMETER     = 0x14,
+    /// <summary>
+    /// Limit for number of items exceeded.
+    /// </summary>
+    CTAP2_ERR_LIMIT_EXCEEDED        = 0x15,
+    /// <summary>
+    /// Unsupported extension. CTAP 2.0 only; absent from the CTAP 2.3 table.
+    /// </summary>
+    CTAP2_ERR_UNSUPPORTED_EXTENSION = 0x16,
+    /// <summary>
+    /// Fingerprint database is full, e.g. during enrollment.
+    /// </summary>
+    CTAP2_ERR_FP_DATABASE_FULL      = 0x17,
+    /// <summary>
+    /// Large blob storage is full.
+    /// </summary>
+    CTAP2_ERR_LARGE_BLOB_STORAGE_FULL = 0x18,
+    /// <summary>
+    /// Valid credential found in the exclude list.
+    /// </summary>
+    CTAP2_ERR_CREDENTIAL_EXCLUDED   = 0x19,
+    /// <summary>
+    /// Processing (Lengthy operation is in progress).
+    /// </summary>
+    CTAP2_ERR_PROCESSING            = 0x21,
+    /// <summary>
+    /// Credential not valid for the authenticator.
+    /// </summary>
+    CTAP2_ERR_INVALID_CREDENTIAL    = 0x22,
+    /// <summary>
+    /// Authentication is waiting for user interaction.
+    /// </summary>
+    CTAP2_ERR_USER_ACTION_PENDING   = 0x23,
+    /// <summary>
+    /// Processing, lengthy operation is in progress.
+    /// </summary>
+    CTAP2_ERR_OPERATION_PENDING     = 0x24,
+    /// <summary>
+    /// No request is pending.
+    /// </summary>
+    CTAP2_ERR_NO_OPERATIONS         = 0x25,
+    /// <summary>
+    /// Authenticator does not support requested algorithm.
+    /// </summary>
+    CTAP2_ERR_UNSUPPORTED_ALGORITHM = 0x26,
+    /// <summary>
+    /// Not authorized for requested operation.
+    /// </summary>
+    CTAP2_ERR_OPERATION_DENIED      = 0x27,
+    /// <summary>
+    /// Internal key storage is full.
+    /// </summary>
+    CTAP2_ERR_KEY_STORE_FULL        = 0x28,
+    /// <summary>
+    /// No outstanding operations. CTAP 2.0 only; absent from the CTAP 2.3 table.
+    /// </summary>
+    CTAP2_ERR_NO_OPERATION_PENDING  = 0x2A,
+    /// <summary>
+    /// Unsupported option.
+    /// </summary>
+    CTAP2_ERR_UNSUPPORTED_OPTION    = 0x2B,
+    /// <summary>
+    /// Not a valid option for current operation.
+    /// </summary>
+    CTAP2_ERR_INVALID_OPTION        = 0x2C,
+    /// <summary>
+    /// Pending keep alive was cancelled.
+    /// </summary>
+    CTAP2_ERR_KEEPALIVE_CANCEL      = 0x2D,
+    /// <summary>
+    /// No valid credentials provided.
+    /// </summary>
+    CTAP2_ERR_NO_CREDENTIALS        = 0x2E,
+    /// <summary>
+    /// Timeout waiting for user interaction.
+    /// </summary>
+    CTAP2_ERR_USER_ACTION_TIMEOUT   = 0x2F,
+    /// <summary>
+    /// Continuation command, such as, authenticatorGetNextAssertion not allowed.
+    /// </summary>
+    CTAP2_ERR_NOT_ALLOWED           = 0x30,
+    /// <summary>
+    /// PIN Invalid.
+    /// </summary>
+    CTAP2_ERR_PIN_INVALID           = 0x31,
+    /// <summary>
+    /// PIN Blocked.
+    /// </summary>
+    CTAP2_ERR_PIN_BLOCKED           = 0x32,
+    /// <summary>
+    /// PIN authentication,pinUvAuthParam, verification failed.
+    /// </summary>
+    CTAP2_ERR_PIN_AUTH_INVALID      = 0x33,
+    /// <summary>
+    /// PIN authentication using pinUvAuthToken blocked. Requires power cycle to reset.
+    /// </summary>
+    CTAP2_ERR_PIN_AUTH_BLOCKED      = 0x34,
+    /// <summary>
+    /// No PIN has been set.
+    /// </summary>
+    CTAP2_ERR_PIN_NOT_SET           = 0x35,
+    /// <summary>
+    /// A pinUvAuthToken is required for the selected operation (CTAP 2.0 named this CTAP2_ERR_PIN_REQUIRED).
+    /// </summary>
+    CTAP2_ERR_PUAT_REQUIRED         = 0x36,
+    /// <summary>
+    /// PIN policy violation. Currently only enforces minimum length.
+    /// </summary>
+    CTAP2_ERR_PIN_POLICY_VIOLATION  = 0x37,
+    /// <summary>
+    /// pinToken expired. CTAP 2.0 only; 0x38 is reserved for future use in CTAP 2.3.
+    /// </summary>
+    CTAP2_ERR_PIN_TOKEN_EXPIRED     = 0x38,
+    /// <summary>
+    /// Authenticator cannot handle this request due to memory constraints.
+    /// </summary>
+    CTAP2_ERR_REQUEST_TOO_LARGE     = 0x39,
+    /// <summary>
+    /// The current operation has timed out.
+    /// </summary>
+    CTAP2_ERR_ACTION_TIMEOUT        = 0x3A,
+    /// <summary>
+    /// User presence is required for the requested operation.
+    /// </summary>
+    CTAP2_ERR_UP_REQUIRED           = 0x3B,
+    /// <summary>
+    /// built-in user verification is blocked.
+    /// </summary>
+    CTAP2_ERR_UV_BLOCKED            = 0x3C,
+    /// <summary>
+    /// A checksum did not match.
+    /// </summary>
+    CTAP2_ERR_INTEGRITY_FAILURE     = 0x3D,
+    /// <summary>
+    /// The requested subcommand is either invalid or not implemented.
+    /// </summary>
+    CTAP2_ERR_INVALID_SUBCOMMAND    = 0x3E,
+    /// <summary>
+    /// built-in user verification unsuccessful. The platform SHOULD retry.
+    /// </summary>
+    CTAP2_ERR_UV_INVALID            = 0x3F,
+    /// <summary>
+    /// The permission set has not been granted for the pinUvAuthToken.
+    /// </summary>
+    CTAP2_ERR_UNAUTHORIZED_PERMISSION = 0x40,
+    /// <summary>
+    /// Other unspecified error.
+    /// </summary>
+    CTAP1_ERR_OTHER                 = 0x7F,
+    /// <summary>
+    /// CTAP 2 spec last error.
+    /// </summary>
+    CTAP2_ERR_SPEC_LAST             = 0xDF,
+    /// <summary>
+    /// Extension specific error.
+    /// </summary>
+    CTAP2_ERR_EXTENSION_FIRST       = 0xE0,
+    /// <summary>
+    /// Extension specific error.
+    /// </summary>
+    CTAP2_ERR_EXTENSION_LAST        = 0xEF,
+    /// <summary>
+    /// Vendor specific error.
+    /// </summary>
+    CTAP2_ERR_VENDOR_FIRST          = 0xF0,
+    /// <summary>
+    /// Vendor specific error.
+    /// </summary>
+    CTAP2_ERR_VENDOR_LAST           = 0xFF,
 }

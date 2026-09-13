@@ -10,6 +10,9 @@ namespace Fido2NetLib;
 /// </remarks>
 public readonly struct RgbPaletteEntry : IEquatable<RgbPaletteEntry>
 {
+    /// <summary>
+    /// Initializes an entry from its red, green and blue components.
+    /// </summary>
     [JsonConstructor]
     public RgbPaletteEntry(ushort r, ushort g, ushort b)
     {
@@ -36,6 +39,9 @@ public readonly struct RgbPaletteEntry : IEquatable<RgbPaletteEntry>
     [JsonPropertyName("b")]
     public ushort B { get; }
 
+    /// <summary>
+    /// Two entries are equal when all three components match.
+    /// </summary>
     public bool Equals(RgbPaletteEntry other)
     {
         return R == other.R
@@ -43,21 +49,29 @@ public readonly struct RgbPaletteEntry : IEquatable<RgbPaletteEntry>
             && B == other.B;
     }
 
+    /// <inheritdoc/>
     public override bool Equals(object? obj)
     {
         return obj is RgbPaletteEntry other && Equals(other);
     }
 
+    /// <summary>
+    /// Two entries are equal when all three components match.
+    /// </summary>
     public static bool operator ==(RgbPaletteEntry left, RgbPaletteEntry right)
     {
         return left.Equals(right);
     }
 
+    /// <summary>
+    /// Two entries differ when any component differs.
+    /// </summary>
     public static bool operator !=(RgbPaletteEntry left, RgbPaletteEntry right)
     {
         return !left.Equals(right);
     }
 
+    /// <inheritdoc/>
     public override int GetHashCode()
     {
         return HashCode.Combine(R, G, B);

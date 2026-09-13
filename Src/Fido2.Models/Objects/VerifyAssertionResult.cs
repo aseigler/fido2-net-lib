@@ -7,6 +7,9 @@ namespace Fido2NetLib.Objects;
 /// </summary>
 public class VerifyAssertionResult
 {
+    /// <summary>
+    /// The ID of the credential that produced the assertion.
+    /// </summary>
     public byte[] CredentialId { get; init; }
 
     /// <summary>

@@ -93,6 +93,9 @@ public sealed class AuthenticatorBioEnrollmentResponse
     [CborMember(0x08)]
     public int? MaxTemplateFriendlyName { get; set; }
 
+    /// <summary>
+    /// Decodes the response map of an authenticatorBioEnrollment operation.
+    /// </summary>
     public static AuthenticatorBioEnrollmentResponse FromCborObject(CborObject cbor)
     {
         var result = new AuthenticatorBioEnrollmentResponse();

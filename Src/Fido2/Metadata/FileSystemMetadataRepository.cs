@@ -10,18 +10,26 @@ using Fido2NetLib.Serialization;
 
 namespace Fido2NetLib;
 
+/// <summary>
+/// Reads metadata statements from JSON files in a directory, one authenticator per file, for metadata you maintain yourself.
+/// </summary>
 public sealed class FileSystemMetadataRepository : IMetadataRepository
 {
     private readonly string _directoryPath;
     private readonly Dictionary<Guid, MetadataBLOBPayloadEntry> _entries;
     private MetadataBLOBPayload? _blob;
 
+    /// <summary>
+    /// Initializes the repository.
+    /// </summary>
+    /// <param name="directoryPath">The directory holding the metadata statement files.</param>
     public FileSystemMetadataRepository(string directoryPath)
     {
         _directoryPath = directoryPath;
         _entries = new Dictionary<Guid, MetadataBLOBPayloadEntry>();
     }
 
+    /// <inheritdoc/>
     public async Task<MetadataStatement?> GetMetadataStatementAsync(MetadataBLOBPayload blob, MetadataBLOBPayloadEntry entry, CancellationToken cancellationToken = default)
     {
         if (_blob is null)
@@ -35,6 +43,7 @@ public sealed class FileSystemMetadataRepository : IMetadataRepository
         return null;
     }
 
+    /// <inheritdoc/>
     public async Task<MetadataBLOBPayload> GetBLOBAsync(CancellationToken cancellationToken = default)
     {
         if (Directory.Exists(_directoryPath))

@@ -3,8 +3,21 @@ using Fido2NetLib.Objects;
 
 namespace Fido2NetLib.Ctap2;
 
+/// <summary>
+/// The authenticatorGetAssertion command (CTAP 2.3 §6.2): asks the authenticator to sign a challenge with an existing credential.
+/// </summary>
 public sealed class AuthenticatorGetAssertionCommand : CtapCommand
 {
+    /// <summary>
+    /// Initializes the command.
+    /// </summary>
+    /// <param name="rpId">The relying party's identifier.</param>
+    /// <param name="clientDataHash">The SHA-256 hash of the client data the signature must cover.</param>
+    /// <param name="allowList">The credentials acceptable to the relying party; empty to let the authenticator pick a discoverable credential.</param>
+    /// <param name="extensions">Extension inputs, or <see langword="null"/> for none.</param>
+    /// <param name="options">The <c>up</c> and <c>uv</c> options, or <see langword="null"/> for the authenticator's defaults.</param>
+    /// <param name="pinUvAuthParam">The authentication of <paramref name="clientDataHash"/> under a pinUvAuthToken, when user verification is done by PIN or built-in sensor.</param>
+    /// <param name="pinUvAuthProtocol">The PIN/UV auth protocol <paramref name="pinUvAuthParam"/> was made with.</param>
     public AuthenticatorGetAssertionCommand(
         string rpId,
         byte[] clientDataHash,
@@ -70,8 +83,10 @@ public sealed class AuthenticatorGetAssertionCommand : CtapCommand
     [CborMember(0x07)]
     public uint? PinUvAuthProtocol { get; }
 
+    /// <inheritdoc/>
     public override CtapCommandType Type => CtapCommandType.AuthenticatorGetAssertion;
 
+    /// <inheritdoc/>
     protected override CborObject? GetParameters()
     {
         var cbor = new CborMap
@@ -101,6 +116,9 @@ public sealed class AuthenticatorGetAssertionCommand : CtapCommand
     }
 }
 
+/// <summary>
+/// The <c>options</c> map of authenticatorGetAssertion.
+/// </summary>
 public sealed class AuthenticatorGetAssertionOptions
 {
     /// <summary>
@@ -115,6 +133,9 @@ public sealed class AuthenticatorGetAssertionOptions
     [CborMember("uv")]
     public bool? UserVerification { get; init; }
 
+    /// <summary>
+    /// Encodes the options that are set as a CBOR map.
+    /// </summary>
     public CborMap ToCborObject()
     {
         var result = new CborMap();

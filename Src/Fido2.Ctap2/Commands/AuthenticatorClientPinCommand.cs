@@ -3,6 +3,17 @@ using Fido2NetLib.Objects;
 
 namespace Fido2NetLib.Ctap2;
 
+/// <summary>
+/// The authenticatorClientPIN command (CTAP 2.3 §6.5): PIN management and pinUvAuthToken acquisition.
+/// </summary>
+/// <param name="pinUvAuthProtocol">The PIN/UV auth protocol version the platform chose.</param>
+/// <param name="subCommand">Which operation to perform.</param>
+/// <param name="keyAgreement">The platform's key-agreement public key, for operations that encrypt a PIN.</param>
+/// <param name="pinUvAuthParam">The authentication of the request under the shared secret, for operations that require it.</param>
+/// <param name="newPinEnc">The new PIN, padded and encrypted under the shared secret.</param>
+/// <param name="pinHashEnc">The first 16 bytes of the current PIN's SHA-256, encrypted under the shared secret.</param>
+/// <param name="permissions">The permissions a pinUvAuthToken is requested with.</param>
+/// <param name="rpId">The RP ID the requested permissions are scoped to, where the permissions require one.</param>
 public sealed class AuthenticatorClientPinCommand(
     uint pinUvAuthProtocol,
     AuthenticatorClientPinSubCommand subCommand,
@@ -69,8 +80,10 @@ public sealed class AuthenticatorClientPinCommand(
     [CborMember(0x0A)]
     public string? RpId { get; } = rpId;
 
+    /// <inheritdoc/>
     public override CtapCommandType Type => CtapCommandType.AuthenticatorClientPin;
 
+    /// <inheritdoc/>
     protected override CborObject? GetParameters()
     {
         var cbor = new CborMap
@@ -113,12 +126,27 @@ public sealed class AuthenticatorClientPinCommand(
     }
 }
 
+/// <summary>
+/// The operations of authenticatorClientPIN (CTAP 2.3 §6.5).
+/// </summary>
 public enum AuthenticatorClientPinSubCommand
 {
     #pragma warning disable format
+    /// <summary>
+    /// Reports how many PIN attempts remain before the PIN is blocked.
+    /// </summary>
     GetPinRetries                              = 0x01,
+    /// <summary>
+    /// Returns the authenticator's key-agreement public key, from which the shared secret is derived.
+    /// </summary>
     GetKeyAgreement                         = 0x02,
+    /// <summary>
+    /// Sets a PIN on an authenticator that has none.
+    /// </summary>
     SetPin                                  = 0x03,
+    /// <summary>
+    /// Replaces the PIN, given the current one.
+    /// </summary>
     ChangePin                               = 0x04,
 
     /// <summary>Superseded by <see cref="GetPinUvAuthTokenUsingUvWithPermissions"/> or <see cref="GetPinUvAuthTokenUsingPinWithPermissions"/>; kept for backwards compatibility.</summary>

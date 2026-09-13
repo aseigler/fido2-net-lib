@@ -6,8 +6,18 @@ using Fido2NetLib.Exceptions;
 
 namespace Fido2NetLib;
 
+/// <summary>
+/// Checks an attestation against what the authenticator's metadata statement says it should look like.
+/// </summary>
 public static class TrustAnchor
 {
+    /// <summary>
+    /// Checks that the attestation's certificate chain matches the metadata entry: chaining to a declared trust anchor when the entry requires full attestation, or being self-signed when it does not.
+    /// </summary>
+    /// <param name="metadataEntry">The authenticator's metadata entry, or <see langword="null"/> to check nothing.</param>
+    /// <param name="trustPath">The attestation certificate followed by the rest of the chain the authenticator supplied.</param>
+    /// <param name="validationMode">Which rules to apply.</param>
+    /// <exception cref="Fido2VerificationException">The chain does not match.</exception>
     public static void Verify(MetadataBLOBPayloadEntry? metadataEntry, X509Certificate2[] trustPath, FidoValidationMode validationMode = FidoValidationMode.Default)
     {
         if (trustPath != null && metadataEntry?.MetadataStatement?.AttestationTypes is not null)

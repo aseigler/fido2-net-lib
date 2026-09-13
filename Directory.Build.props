@@ -20,11 +20,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- 
-      Temporary disabling of CS1591 (Missing XML comment for publicly visible type or member) warning
-      Make sure to re-enable it when https://github.com/passwordless-lib/fido2-net-lib/issues/501 is resolved.
+    <!--
+      CS1591 (missing XML comment on a public member) is an error for the libraries, which opt in through
+      Src/Directory.Build.props. The demos and tests are exempt.
     -->
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <NoWarn Condition="'$(EnforceXmlDocs)' != 'true'">$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
   
   <!-- Language + Compiler Settings-->

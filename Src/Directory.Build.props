@@ -1,5 +1,10 @@
 <!-- Build props for the libraries (anything under Src/) -->
 <Project>
+  <PropertyGroup>
+    <!-- The libraries are the public API: every public member carries an XML doc comment, and the build enforces it. -->
+    <EnforceXmlDocs>true</EnforceXmlDocs>
+  </PropertyGroup>
+
   <Import Project="..\Directory.Build.props"/>
 
   <PropertyGroup Condition="$(IS_DOCKER) == ''">

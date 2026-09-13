@@ -379,65 +379,210 @@ internal sealed class Tpm : AttestationVerifier
     }
 }
 
+/// <summary>
+/// The elliptic curves a TPM identifies in a public area (TPM 2.0 Library Part 2, TPM_ECC_CURVE).
+/// </summary>
 public enum TpmEccCurve : ushort
 {
     // TCG TPM Rev 2.0, part 2, structures, section 6.4, TPM_ECC_CURVE
+    /// <summary>
+    /// No curve.
+    /// </summary>
     TPM_ECC_NONE,       // 0x0000
+    /// <summary>
+    /// NIST P-192.
+    /// </summary>
     TPM_ECC_NIST_P192,  // 0x0001
+    /// <summary>
+    /// NIST P-224.
+    /// </summary>
     TPM_ECC_NIST_P224,  // 0x0002
+    /// <summary>
+    /// NIST P-256.
+    /// </summary>
     TPM_ECC_NIST_P256,  // 0x0003
+    /// <summary>
+    /// NIST P-384.
+    /// </summary>
     TPM_ECC_NIST_P384,  // 0x0004
+    /// <summary>
+    /// NIST P-521.
+    /// </summary>
     TPM_ECC_NIST_P521,  // 0x0005
+    /// <summary>
+    /// Barreto-Naehrig 256-bit curve, for ECDAA.
+    /// </summary>
     TPM_ECC_BN_P256,    // 0x0010 curve to support ECDAA
+    /// <summary>
+    /// Barreto-Naehrig 638-bit curve, for ECDAA.
+    /// </summary>
     TPM_ECC_BN_P638,    // 0x0011 curve to support ECDAA
+    /// <summary>
+    /// The SM2 256-bit curve.
+    /// </summary>
     TPM_ECC_SM2_P256    // 0x0020
 }
 
+/// <summary>
+/// The algorithm identifiers a TPM uses (TPM 2.0 Library Part 2, TPM_ALG_ID).
+/// </summary>
 public enum TpmAlg : ushort
 {
     // TCG TPM Rev 2.0, part 2, structures, section 6.3, TPM_ALG_ID
+    /// <summary>
+    /// Reserved; not a valid algorithm.
+    /// </summary>
     TPM_ALG_ERROR, // 0
+    /// <summary>
+    /// The RSA algorithm.
+    /// </summary>
     TPM_ALG_RSA, // 1
+    /// <summary>
+    /// The SHA-1 hash.
+    /// </summary>
     TPM_ALG_SHA1 = 4, // 4
+    /// <summary>
+    /// HMAC.
+    /// </summary>
     TPM_ALG_HMAC, // 5
+    /// <summary>
+    /// The AES block cipher.
+    /// </summary>
     TPM_ALG_AES, // 6
+    /// <summary>
+    /// The MGF1 mask generation function.
+    /// </summary>
     TPM_ALG_MGF1, // 7
+    /// <summary>
+    /// A keyed-hash object: an HMAC key or an XOR obfuscation key.
+    /// </summary>
     TPM_ALG_KEYEDHASH, // 8
+    /// <summary>
+    /// XOR obfuscation.
+    /// </summary>
     TPM_ALG_XOR = 0xA, // A
+    /// <summary>
+    /// The SHA-256 hash.
+    /// </summary>
     TPM_ALG_SHA256, // B
+    /// <summary>
+    /// The SHA-384 hash.
+    /// </summary>
     TPM_ALG_SHA384, // C
+    /// <summary>
+    /// The SHA-512 hash.
+    /// </summary>
     TPM_ALG_SHA512, // D
+    /// <summary>
+    /// No algorithm.
+    /// </summary>
     TPM_ALG_NULL = 0x10, // 10
+    /// <summary>
+    /// The SM3 hash.
+    /// </summary>
     TPM_ALG_SM3_256 = 0x12, // 12
+    /// <summary>
+    /// The SM4 block cipher.
+    /// </summary>
     TPM_ALG_SM4, // 13
+    /// <summary>
+    /// RSASSA-PKCS1-v1_5 signatures.
+    /// </summary>
     TPM_ALG_RSASSA, // 14
+    /// <summary>
+    /// RSAES-PKCS1-v1_5 encryption.
+    /// </summary>
     TPM_ALG_RSAES, // 15
+    /// <summary>
+    /// RSASSA-PSS signatures.
+    /// </summary>
     TPM_ALG_RSAPSS, // 16
+    /// <summary>
+    /// RSAES-OAEP encryption.
+    /// </summary>
     TPM_ALG_OAEP, // 17
+    /// <summary>
+    /// ECDSA signatures.
+    /// </summary>
     TPM_ALG_ECDSA, // 18
+    /// <summary>
+    /// ECDH key agreement.
+    /// </summary>
     TPM_ALG_ECDH, // 19
+    /// <summary>
+    /// Elliptic-curve direct anonymous attestation.
+    /// </summary>
     TPM_ALG_ECDAA, // 1A
+    /// <summary>
+    /// SM2 signatures.
+    /// </summary>
     TPM_ALG_SM2, // 1B
+    /// <summary>
+    /// Elliptic-curve Schnorr signatures.
+    /// </summary>
     TPM_ALG_ECSCHNORR, // 1C
+    /// <summary>
+    /// ECMQV key agreement.
+    /// </summary>
     TPM_ALG_ECMQV, // 1D
+    /// <summary>
+    /// The SP800-56A concatenation KDF.
+    /// </summary>
     TPM_ALG_KDF1_SP800_56A = 0x20,
+    /// <summary>
+    /// The IEEE 1363a-2004 KDF2.
+    /// </summary>
     TPM_ALG_KDF2, // 21
+    /// <summary>
+    /// The SP800-108 counter-mode KDF.
+    /// </summary>
     TPM_ALG_KDF1_SP800_108, // 22
+    /// <summary>
+    /// Prime-field elliptic-curve cryptography.
+    /// </summary>
     TPM_ALG_ECC, // 23
+    /// <summary>
+    /// A symmetric block cipher object.
+    /// </summary>
     TPM_ALG_SYMCIPHER = 0x25,
+    /// <summary>
+    /// The Camellia block cipher.
+    /// </summary>
     TPM_ALG_CAMELLIA, // 26
+    /// <summary>
+    /// Counter mode.
+    /// </summary>
     TPM_ALG_CTR = 0x40,
+    /// <summary>
+    /// Output feedback mode.
+    /// </summary>
     TPM_ALG_OFB, // 41
+    /// <summary>
+    /// Cipher block chaining mode.
+    /// </summary>
     TPM_ALG_CBC, // 42
+    /// <summary>
+    /// Cipher feedback mode.
+    /// </summary>
     TPM_ALG_CFB, // 43
+    /// <summary>
+    /// Electronic codebook mode.
+    /// </summary>
     TPM_ALG_ECB // 44
 };
 
 // TPMS_ATTEST, TPMv2-Part2, section 10.12.8
+/// <summary>
+/// The TPMS_ATTEST structure a TPM signs when certifying a key (TPM 2.0 Library Part 2 §10.12.8), parsed from the <c>certInfo</c> member of a <c>tpm</c> attestation statement.
+/// </summary>
 public sealed class CertInfo
 {
     private readonly byte[] _data;
 
+    /// <summary>
+    /// Parses a TPMS_ATTEST structure.
+    /// </summary>
+    /// <exception cref="Fido2VerificationException">The bytes are not a well-formed TPMS_ATTEST of type TPM_ST_ATTEST_CERTIFY.</exception>
     public CertInfo(byte[] data)
     {
         if (data is null || data.Length is 0)
@@ -475,19 +620,58 @@ public sealed class CertInfo
         if (data.Length != offset)
             throw new Fido2VerificationException("Leftover bits decoding certInfo");
     }
+    /// <summary>
+    /// The structure as received: what the attestation signature covers.
+    /// </summary>
     public ReadOnlySpan<byte> Raw => _data;
 
+    /// <summary>
+    /// The TPM_GENERATED_VALUE, always 0xFF544347.
+    /// </summary>
     public byte[] Magic { get; }
+    /// <summary>
+    /// The structure type, always TPM_ST_ATTEST_CERTIFY.
+    /// </summary>
     public byte[] Type { get; }
+    /// <summary>
+    /// The qualified name of the key that signed the structure.
+    /// </summary>
     public byte[] QualifiedSigner { get; }
+    /// <summary>
+    /// The data the caller supplied to be included: for WebAuthn, the hash of <c>attToBeSigned</c>.
+    /// </summary>
     public byte[] ExtraData { get; }
+    /// <summary>
+    /// The TPM's clock at the time of signing.
+    /// </summary>
     public byte[] Clock { get; }
+    /// <summary>
+    /// How many times the TPM has been reset.
+    /// </summary>
     public byte[] ResetCount { get; }
+    /// <summary>
+    /// How many times the TPM has been restarted since the last reset.
+    /// </summary>
     public byte[] RestartCount { get; }
+    /// <summary>
+    /// Whether the clock value is guaranteed not to have gone backwards.
+    /// </summary>
     public byte[] Safe { get; }
+    /// <summary>
+    /// The TPM's firmware version.
+    /// </summary>
     public byte[] FirmwareVersion { get; }
+    /// <summary>
+    /// The hash algorithm the attested name was computed with, as a <see cref="TpmAlg"/>.
+    /// </summary>
     public ushort Alg { get; }
+    /// <summary>
+    /// The name of the certified key: its hash algorithm followed by the hash of its public area.
+    /// </summary>
     public byte[] AttestedName { get; }
+    /// <summary>
+    /// The qualified name of the certified key.
+    /// </summary>
     public byte[] AttestedQualifiedNameBuffer { get; }
 
     private static readonly Dictionary<TpmAlg, ushort> s_tpmAlgToDigestSizeMap = new()
@@ -498,6 +682,10 @@ public sealed class CertInfo
         { TpmAlg.TPM_ALG_SHA512, SHA512.HashSizeInBytes }
     };
 
+    /// <summary>
+    /// Reads a TPM2B_NAME at <paramref name="offset"/>, advancing it past the structure.
+    /// </summary>
+    /// <returns>The size field and the name bytes.</returns>
     public static (ushort size, byte[] name) NameFromTPM2BName(ReadOnlySpan<byte> ab, ref int offset)
     {
         // TCG TPM Rev 2.0, part 2, structures, section 10.5.3, TPM2B_NAME
@@ -551,10 +739,17 @@ public sealed class CertInfo
 }
 
 // TPMT_PUBLIC, TPMv2-Part2, section 12.2.4
+/// <summary>
+/// The TPMT_PUBLIC structure describing a TPM key (TPM 2.0 Library Part 2 §12.2.4), parsed from the <c>pubArea</c> member of a <c>tpm</c> attestation statement.
+/// </summary>
 public sealed class PubArea
 {
     private readonly byte[] _data;
 
+    /// <summary>
+    /// Parses a TPMT_PUBLIC structure.
+    /// </summary>
+    /// <exception cref="Fido2VerificationException">The bytes are not a well-formed TPMT_PUBLIC for an RSA or ECC key.</exception>
     public PubArea(byte[] data)
     {
         _data = data;
@@ -657,19 +852,61 @@ public sealed class PubArea
             throw new Fido2VerificationException("Leftover bytes decoding pubArea");
     }
 
+    /// <summary>
+    /// The structure as received: what <see cref="CertInfo.AttestedName"/> hashes.
+    /// </summary>
     public ReadOnlySpan<byte> Raw => _data;
 
+    /// <summary>
+    /// The key's algorithm, TPM_ALG_RSA or TPM_ALG_ECC, as a big-endian <see cref="TpmAlg"/>.
+    /// </summary>
     public byte[] Type { get; }
+    /// <summary>
+    /// The hash algorithm used for the key's name, as a big-endian <see cref="TpmAlg"/>.
+    /// </summary>
     public byte[] Alg { get; }
+    /// <summary>
+    /// The TPMA_OBJECT attribute flags.
+    /// </summary>
     public byte[] Attributes { get; }
+    /// <summary>
+    /// The authorization policy digest.
+    /// </summary>
     public byte[] Policy { get; }
+    /// <summary>
+    /// The symmetric algorithm for a restricted decryption key, or <see langword="null"/> if the parameters carry none.
+    /// </summary>
     public byte[]? Symmetric { get; }
+    /// <summary>
+    /// The signing or key-exchange scheme, or <see langword="null"/> if the parameters carry none.
+    /// </summary>
     public byte[]? Scheme { get; }
+    /// <summary>
+    /// The RSA modulus size in bits, or <see langword="null"/> for an ECC key.
+    /// </summary>
     public byte[]? KeyBits { get; }
+    /// <summary>
+    /// The RSA public exponent; zero in the structure means 65537, which is what this reports.
+    /// </summary>
     public uint Exponent { get; }
+    /// <summary>
+    /// The ECC curve as a big-endian <see cref="TpmEccCurve"/>, or <see langword="null"/> for an RSA key.
+    /// </summary>
     public byte[]? CurveID { get; }
+    /// <summary>
+    /// The ECC key derivation scheme, or <see langword="null"/> for an RSA key.
+    /// </summary>
     public byte[]? KDF { get; }
+    /// <summary>
+    /// The public key itself: the RSA modulus, or <see langword="null"/> for an ECC key, whose point is in <see cref="ECPoint"/>.
+    /// </summary>
     public byte[]? Unique { get; }
+    /// <summary>
+    /// <see cref="CurveID"/> decoded.
+    /// </summary>
     public TpmEccCurve EccCurve => (TpmEccCurve)Enum.ToObject(typeof(TpmEccCurve), BinaryPrimitives.ReadUInt16BigEndian(CurveID));
+    /// <summary>
+    /// The ECC public point; unset for an RSA key.
+    /// </summary>
     public ECPoint ECPoint { get; }
 }

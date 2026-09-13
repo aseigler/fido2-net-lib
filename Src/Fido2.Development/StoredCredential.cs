@@ -4,6 +4,9 @@ using Fido2NetLib.Objects;
 
 namespace Fido2NetLib.Development;
 
+/// <summary>
+/// What the demos store per credential: the fields of <see cref="RegisteredPublicKeyCredential"/> a relying party needs later, plus bookkeeping. Not published as a package; model your own storage on it.
+/// </summary>
 public class StoredCredential
 {
     /// <summary>
@@ -48,6 +51,9 @@ public class StoredCredential
     /// </summary>
     public byte[] AttestationClientDataJson { get; set; }
 
+    /// <summary>
+    /// The ID of the user the credential is registered to.
+    /// </summary>
     public byte[] UserId { get; set; }
 
     /// <summary>
@@ -55,11 +61,23 @@ public class StoredCredential
     /// </summary>
     public PublicKeyCredentialDescriptor Descriptor => new(PublicKeyCredentialType.PublicKey, Id, Transports);
 
+    /// <summary>
+    /// The user handle the credential was created with, which the authenticator returns in a discoverable-credential ceremony.
+    /// </summary>
     public byte[] UserHandle { get; set; }
 
+    /// <summary>
+    /// The attestation statement format the registration used.
+    /// </summary>
     public string AttestationFormat { get; set; }
 
+    /// <summary>
+    /// When the credential was registered.
+    /// </summary>
     public DateTimeOffset RegDate { get; set; }
 
+    /// <summary>
+    /// The AAGUID of the authenticator model that created the credential.
+    /// </summary>
     public Guid AaGuid { get; set; }
 }

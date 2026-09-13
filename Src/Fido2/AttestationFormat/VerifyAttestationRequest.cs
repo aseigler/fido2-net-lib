@@ -6,6 +6,12 @@ using Fido2NetLib.Objects;
 
 namespace Fido2NetLib;
 
+/// <summary>
+/// The inputs to <see cref="AttestationVerifier.VerifyAsync(VerifyAttestationRequest)"/>.
+/// </summary>
+/// <param name="attStmt">The attestation statement from the attestation object.</param>
+/// <param name="authenticationData">The authenticator data the statement covers.</param>
+/// <param name="clientDataHash">The SHA-256 hash of the client data JSON.</param>
 public sealed class VerifyAttestationRequest(
     CborMap attStmt,
     AuthenticatorData authenticationData,

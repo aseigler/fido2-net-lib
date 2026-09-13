@@ -6,6 +6,9 @@ using Fido2NetLib.Serialization;
 
 namespace Fido2NetLib;
 
+/// <summary>
+/// Sent to the browser when we want to register a new credential: the <c>PublicKeyCredentialCreationOptions</c> for <c>navigator.credentials.create()</c>.
+/// </summary>
 public sealed class CredentialCreateOptions
 {
     /// <summary>
@@ -118,6 +121,18 @@ public sealed class CredentialCreateOptions
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public AuthenticationExtensionsClientInputs? Extensions { get; set; }
 
+    /// <summary>
+    /// Builds the options for a registration ceremony from the relying party's configuration.
+    /// </summary>
+    /// <param name="config">Supplies the RP ID and name, and the timeout.</param>
+    /// <param name="challenge">The challenge the attestation will cover; keep it server-side to verify the response.</param>
+    /// <param name="user">The account the credential is being created for. Its handle must be 1 to 64 bytes.</param>
+    /// <param name="authenticatorSelection">Which authenticators are eligible; see <see cref="AuthenticatorSelection.Default"/>.</param>
+    /// <param name="attestationConveyancePreference">How much attestation the RP wants back.</param>
+    /// <param name="excludeCredentials">Credentials the user already has, so the client refuses to create a duplicate on the same authenticator.</param>
+    /// <param name="extensions">Client extension inputs, or <see langword="null"/> for none.</param>
+    /// <param name="pubKeyCredParams">The algorithms the RP accepts, most preferred first; see <see cref="PubKeyCredParam.Defaults"/>.</param>
+    /// <exception cref="ArgumentException">The user handle is missing or not 1 to 64 bytes long.</exception>
     public static CredentialCreateOptions Create(
         Fido2Configuration config,
         byte[] challenge,
@@ -146,11 +161,17 @@ public sealed class CredentialCreateOptions
         };
     }
 
+    /// <summary>
+    /// Serializes the options as the JSON the browser's <c>navigator.credentials.create()</c> expects, with binary members base64url-encoded.
+    /// </summary>
     public string ToJson()
     {
         return JsonSerializer.Serialize(this, FidoModelSerializerContext.Default.CredentialCreateOptions);
     }
 
+    /// <summary>
+    /// Restores options produced by <see cref="ToJson"/>.
+    /// </summary>
     public static CredentialCreateOptions FromJson(string json)
     {
         return JsonSerializer.Deserialize(json, FidoModelSerializerContext.Default.CredentialCreateOptions)!;
@@ -177,16 +198,49 @@ public sealed class PubKeyCredParam(
     [JsonPropertyName("alg")]
     public COSE.Algorithm Alg { get; } = alg;
 
+    /// <summary>
+    /// ECDSA with P-256 and SHA-256. Supported by every authenticator.
+    /// </summary>
     public static readonly PubKeyCredParam ES256 = new(COSE.Algorithm.ES256); // External authenticators support the ES256 algorithm
+    /// <summary>
+    /// ECDSA with P-384 and SHA-384.
+    /// </summary>
     public static readonly PubKeyCredParam ES384 = new(COSE.Algorithm.ES384);
+    /// <summary>
+    /// ECDSA with P-521 and SHA-512.
+    /// </summary>
     public static readonly PubKeyCredParam ES512 = new(COSE.Algorithm.ES512);
+    /// <summary>
+    /// RSASSA-PKCS1-v1_5 with SHA-256. Needed for Windows Hello and TPM-backed authenticators.
+    /// </summary>
     public static readonly PubKeyCredParam RS256 = new(COSE.Algorithm.RS256); // Supported by windows hello
+    /// <summary>
+    /// RSASSA-PKCS1-v1_5 with SHA-384.
+    /// </summary>
     public static readonly PubKeyCredParam RS384 = new(COSE.Algorithm.RS384);
+    /// <summary>
+    /// RSASSA-PKCS1-v1_5 with SHA-512.
+    /// </summary>
     public static readonly PubKeyCredParam RS512 = new(COSE.Algorithm.RS512);
+    /// <summary>
+    /// RSASSA-PSS with SHA-256.
+    /// </summary>
     public static readonly PubKeyCredParam PS256 = new(COSE.Algorithm.PS256);
+    /// <summary>
+    /// RSASSA-PSS with SHA-384.
+    /// </summary>
     public static readonly PubKeyCredParam PS384 = new(COSE.Algorithm.PS384);
+    /// <summary>
+    /// RSASSA-PSS with SHA-512.
+    /// </summary>
     public static readonly PubKeyCredParam PS512 = new(COSE.Algorithm.PS512);
+    /// <summary>
+    /// EdDSA over Ed25519.
+    /// </summary>
     public static readonly PubKeyCredParam Ed25519 = new(COSE.Algorithm.EdDSA);
+    /// <summary>
+    /// RSASSA-PKCS1-v1_5 with SHA-1. Legacy; only for authenticators that support nothing stronger.
+    /// </summary>
     public static readonly PubKeyCredParam RS1 = new(COSE.Algorithm.RS1);
 
     /// <summary>
@@ -228,6 +282,9 @@ public sealed class PublicKeyCredentialRpEntity(
     [JsonPropertyName("name")]
     public string Name { get; set; } = name;
 
+    /// <summary>
+    /// A URL for an image of the relying party, intended only for display. Removed from WebAuthn Level 2; clients ignore it.
+    /// </summary>
     [JsonPropertyName("icon")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Icon { get; set; } = icon;
@@ -303,6 +360,9 @@ public class AuthenticatorSelection
     [JsonPropertyName("userVerification")]
     public UserVerificationRequirement UserVerification { get; set; }
 
+    /// <summary>
+    /// No attachment preference, a discoverable credential if the authenticator offers one, and no user verification requirement.
+    /// </summary>
     public static AuthenticatorSelection Default => new AuthenticatorSelection
     {
         AuthenticatorAttachment = null,
@@ -311,6 +371,9 @@ public class AuthenticatorSelection
     };
 }
 
+/// <summary>
+/// The user account a credential belongs to: the <c>PublicKeyCredentialUserEntity</c> sent when registering, and stored with the credential.
+/// </summary>
 public class Fido2User
 {
     /// <summary>

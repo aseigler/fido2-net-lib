@@ -2,6 +2,9 @@
 using System.Text.Json.Serialization;
 namespace Fido2NetLib;
 
+/// <summary>
+/// The token binding member of the client data. Token binding never saw deployment and was dropped from WebAuthn Level 3; this remains for the conformance tool's tests.
+/// </summary>
 public class TokenBindingDto
 {
     /// <summary>
@@ -18,6 +21,10 @@ public class TokenBindingDto
     [JsonPropertyName("id")]
     public string? Id { get; set; }
 
+    /// <summary>
+    /// Verifies the member as the conformance tool expects: a status of <c>present</c> must carry the base64url encoding of <paramref name="requestTokenbinding"/> as its ID.
+    /// </summary>
+    /// <exception cref="Fido2VerificationException">The status is unknown, or a present binding's ID is missing or does not match.</exception>
     public void Verify(byte[]? requestTokenbinding)
     {
         // validation by the FIDO conformance tool (more than spec says)

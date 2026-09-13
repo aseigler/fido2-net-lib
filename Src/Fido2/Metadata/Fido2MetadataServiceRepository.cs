@@ -77,11 +77,13 @@ public sealed class Fido2MetadataServiceRepository(IHttpClientFactory httpClient
     // fetch skips the conditional GET optimization, not a correctness issue.
     private CachedRawBlob? _cachedRawBlob;
 
+    /// <inheritdoc/>
     public Task<MetadataStatement?> GetMetadataStatementAsync(MetadataBLOBPayload blob, MetadataBLOBPayloadEntry entry, CancellationToken cancellationToken = default)
     {
         return Task.FromResult<MetadataStatement?>(entry.MetadataStatement);
     }
 
+    /// <inheritdoc/>
     public async Task<MetadataBLOBPayload> GetBLOBAsync(CancellationToken cancellationToken = default)
     {
         var rawBLOB = await GetRawBlobAsync(cancellationToken);

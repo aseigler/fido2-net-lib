@@ -3,8 +3,24 @@ using Fido2NetLib.Objects;
 
 namespace Fido2NetLib.Ctap2;
 
+/// <summary>
+/// The authenticatorMakeCredential command (CTAP 2.3 §6.1): asks the authenticator to create a credential and attest to it.
+/// </summary>
 public sealed class AuthenticatorMakeCredentialCommand : CtapCommand
 {
+    /// <summary>
+    /// Initializes the command.
+    /// </summary>
+    /// <param name="clientDataHash">The SHA-256 hash of the client data the attestation must cover.</param>
+    /// <param name="rpEntity">The relying party the credential is scoped to.</param>
+    /// <param name="user">The account the credential is for.</param>
+    /// <param name="pubKeyCredParams">The algorithms acceptable to the relying party, most preferred first.</param>
+    /// <param name="options">The <c>rk</c> and <c>uv</c> options.</param>
+    /// <param name="pinUvAuthParam">The authentication of <paramref name="clientDataHash"/> under a pinUvAuthToken, when user verification is done by PIN or built-in sensor.</param>
+    /// <param name="pinUvAuthProtocol">The PIN/UV auth protocol <paramref name="pinUvAuthParam"/> was made with.</param>
+    /// <param name="enterpriseAttestation">The kind of enterprise attestation requested: 1 for vendor-facilitated, 2 for platform-managed.</param>
+    /// <param name="attestationFormatsPreference">The attestation statement formats the relying party prefers, in order.</param>
+    /// <param name="extensions">Extension inputs, or <see langword="null"/> for none.</param>
     public AuthenticatorMakeCredentialCommand(
         byte[] clientDataHash,
         PublicKeyCredentialRpEntity rpEntity,
@@ -42,6 +58,9 @@ public sealed class AuthenticatorMakeCredentialCommand : CtapCommand
     [CborMember(0x02)]
     public PublicKeyCredentialRpEntity Rp { get; }
 
+    /// <summary>
+    /// The account the credential is for.
+    /// </summary>
     [CborMember(0x03)]
     public PublicKeyCredentialUserEntity User { get; }
 
@@ -58,9 +77,15 @@ public sealed class AuthenticatorMakeCredentialCommand : CtapCommand
     [CborMember(0x05)]
     public PublicKeyCredentialDescriptor[]? ExcludeList { get; }
 
+    /// <summary>
+    /// The extension inputs, or <see langword="null"/> for none.
+    /// </summary>
     [CborMember(0x06)]
     public CtapMakeCredentialExtensions? Extensions { get; }
 
+    /// <summary>
+    /// The <c>rk</c> and <c>uv</c> options, or <see langword="null"/> for the authenticator's defaults.
+    /// </summary>
     [CborMember(0x07)]
     public AuthenticatorMakeCredentialOptions? Options { get; }
 
@@ -95,8 +120,10 @@ public sealed class AuthenticatorMakeCredentialCommand : CtapCommand
     [CborMember(0x0B)]
     public string[]? AttestationFormatsPreference { get; }
 
+    /// <inheritdoc/>
     public override CtapCommandType Type => CtapCommandType.AuthenticatorMakeCredential;
 
+    /// <inheritdoc/>
     protected override CborObject? GetParameters()
     {
         var cbor = new CborMap
@@ -159,6 +186,9 @@ public sealed class AuthenticatorMakeCredentialCommand : CtapCommand
     }
 }
 
+/// <summary>
+/// The <c>options</c> map of authenticatorMakeCredential.
+/// </summary>
 public sealed class AuthenticatorMakeCredentialOptions
 {
     /// <summary>
@@ -175,6 +205,9 @@ public sealed class AuthenticatorMakeCredentialOptions
     public bool? UserVerification { get; init; }
 
 
+    /// <summary>
+    /// Encodes the options that are set as a CBOR map.
+    /// </summary>
     public CborMap ToCborObject()
     {
         var result = new CborMap();

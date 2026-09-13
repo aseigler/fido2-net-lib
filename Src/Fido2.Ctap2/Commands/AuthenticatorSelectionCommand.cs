@@ -7,5 +7,6 @@ namespace Fido2NetLib.Ctap2;
 /// </summary>
 public sealed class AuthenticatorSelectionCommand : CtapCommand
 {
+    /// <inheritdoc/>
     public override CtapCommandType Type => CtapCommandType.AuthenticatorSelection;
 }

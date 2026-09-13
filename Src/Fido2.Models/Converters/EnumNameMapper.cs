@@ -6,6 +6,10 @@ using System.Text.Json.Serialization;
 
 namespace Fido2NetLib;
 
+/// <summary>
+/// Maps between the members of <typeparamref name="TEnum"/> and the names their <see cref="System.Runtime.Serialization.EnumMemberAttribute"/> declares, as the WebAuthn and FIDO specifications spell them on the wire.
+/// </summary>
+/// <typeparam name="TEnum">An enum whose members carry <see cref="System.Runtime.Serialization.EnumMemberAttribute"/>.</typeparam>
 public static class EnumNameMapper<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TEnum>
     where TEnum : struct, Enum
 {
@@ -25,16 +29,25 @@ public static class EnumNameMapper<[DynamicallyAccessedMembers(DynamicallyAccess
         return items.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Finds the member whose wire name is <paramref name="name"/>, ignoring case.
+    /// </summary>
     public static bool TryGetValue(string name, out TEnum value)
     {
         return s_namesToValues.TryGetValue(name, out value);
     }
 
+    /// <summary>
+    /// The wire name of <paramref name="value"/>.
+    /// </summary>
     public static string GetName(TEnum value)
     {
         return s_valueToNames[value];
     }
 
+    /// <summary>
+    /// Every wire name the enum declares.
+    /// </summary>
     public static IEnumerable<string> GetNames()
     {
         return s_namesToValues.Keys;

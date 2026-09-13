@@ -27,12 +27,25 @@ public sealed class AuthenticatorAssertionResponse : AuthenticatorResponse
 
     internal AuthenticatorAssertionRawResponse Raw => _raw; // accessed in Verify()
 
+    /// <summary>
+    /// The authenticator data, parsed.
+    /// </summary>
     public AuthenticatorData AuthenticatorData { get; init; }
 
+    /// <summary>
+    /// The assertion signature, as received.
+    /// </summary>
     public ReadOnlySpan<byte> Signature => _raw.Response.Signature;
 
+    /// <summary>
+    /// The user handle the authenticator returned, or <see langword="null"/> if it returned none.
+    /// </summary>
     public byte[]? UserHandle => _raw.Response.UserHandle;
 
+    /// <summary>
+    /// Parses the client data and authenticator data of a raw assertion response.
+    /// </summary>
+    /// <exception cref="Fido2VerificationException">A required member is missing or malformed.</exception>
     public static AuthenticatorAssertionResponse Parse(AuthenticatorAssertionRawResponse rawResponse)
     {
         return new AuthenticatorAssertionResponse(

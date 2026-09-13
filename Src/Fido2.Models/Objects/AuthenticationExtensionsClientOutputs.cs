@@ -2,6 +2,9 @@
 
 namespace Fido2NetLib.Objects;
 
+/// <summary>
+/// The client extension outputs a ceremony returned, one member per extension the library understands.
+/// </summary>
 public class AuthenticationExtensionsClientOutputs
 {
     /// <summary>

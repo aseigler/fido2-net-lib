@@ -64,6 +64,14 @@ public class AssertionOptions
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public AuthenticationExtensionsClientInputs? Extensions { get; set; }
 
+    /// <summary>
+    /// Builds the options for an authentication ceremony from the relying party's configuration.
+    /// </summary>
+    /// <param name="config">Supplies the RP ID and the timeout.</param>
+    /// <param name="challenge">The challenge the authenticator will sign; keep it server-side to verify the assertion.</param>
+    /// <param name="allowedCredentials">The credentials the user may authenticate with, most preferred first. Leave empty for a discoverable-credential (usernameless) ceremony.</param>
+    /// <param name="userVerification">The RP's user verification requirement, or <see langword="null"/> for the client default.</param>
+    /// <param name="extensions">Client extension inputs, or <see langword="null"/> for none.</param>
     public static AssertionOptions Create(
         Fido2Configuration config,
         byte[] challenge,
@@ -82,11 +90,17 @@ public class AssertionOptions
         };
     }
 
+    /// <summary>
+    /// Serializes the options as the JSON the browser's <c>navigator.credentials.get()</c> expects, with binary members base64url-encoded.
+    /// </summary>
     public string ToJson()
     {
         return JsonSerializer.Serialize(this, FidoModelSerializerContext.Default.AssertionOptions);
     }
 
+    /// <summary>
+    /// Restores options produced by <see cref="ToJson"/>.
+    /// </summary>
     public static AssertionOptions FromJson(string json)
     {
         return JsonSerializer.Deserialize(json, FidoModelSerializerContext.Default.AssertionOptions)!;

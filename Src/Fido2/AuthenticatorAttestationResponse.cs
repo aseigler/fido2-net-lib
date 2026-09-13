@@ -26,10 +26,20 @@ public sealed class AuthenticatorAttestationResponse : AuthenticatorResponse
         AttestationObject = attestationObject;
     }
 
+    /// <summary>
+    /// The attestation object, parsed.
+    /// </summary>
     public ParsedAttestationObject AttestationObject { get; }
 
+    /// <summary>
+    /// The response as received.
+    /// </summary>
     public AuthenticatorAttestationRawResponse Raw { get; }
 
+    /// <summary>
+    /// Parses the client data and attestation object of a raw attestation response.
+    /// </summary>
+    /// <exception cref="Fido2VerificationException">A required member is missing or malformed.</exception>
     public static AuthenticatorAttestationResponse Parse(AuthenticatorAttestationRawResponse rawResponse)
     {
         if (rawResponse?.Response is null)
@@ -55,6 +65,16 @@ public sealed class AuthenticatorAttestationResponse : AuthenticatorResponse
         return new AuthenticatorAttestationResponse(rawResponse, attestationObject);
     }
 
+    /// <summary>
+    /// Verifies the response against the options it answers, following WebAuthn §7.1, and returns the credential to store.
+    /// </summary>
+    /// <param name="originalOptions">The options the relying party issued for this registration.</param>
+    /// <param name="config">The relying party's configuration.</param>
+    /// <param name="isCredentialIdUniqueToUser">Tells whether the new credential ID is not already registered.</param>
+    /// <param name="metadataService">Where to look the authenticator up for attestation trust anchors, or <see langword="null"/> to not check attestation against metadata.</param>
+    /// <param name="requestTokenBindingId">The token binding ID of the request, if token binding was used.</param>
+    /// <param name="cancellationToken">Cancels the metadata lookup.</param>
+    /// <exception cref="Fido2VerificationException">The response does not verify; <see cref="Fido2VerificationException.Code"/> names the step.</exception>
     public async Task<RegisteredPublicKeyCredential> VerifyAsync(
         CredentialCreateOptions originalOptions,
         Fido2Configuration config,
@@ -204,10 +224,19 @@ public sealed class AuthenticatorAttestationResponse : AuthenticatorResponse
     /// </summary>
     public sealed class ParsedAttestationObject(string fmt, CborMap attStmt, AuthenticatorData authData)
     {
+        /// <summary>
+        /// The attestation statement format identifier.
+        /// </summary>
         public string Fmt { get; } = fmt;
 
+        /// <summary>
+        /// The attestation statement, in the shape <see cref="Fmt"/> defines.
+        /// </summary>
         public CborMap AttStmt { get; } = attStmt;
 
+        /// <summary>
+        /// The authenticator data, carrying the new credential.
+        /// </summary>
         public AuthenticatorData AuthData { get; } = authData;
 
         internal static ParsedAttestationObject FromCbor(CborMap cbor)

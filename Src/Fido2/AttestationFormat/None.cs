@@ -5,8 +5,12 @@ using Fido2NetLib.Objects;
 
 namespace Fido2NetLib;
 
+/// <summary>
+/// Verifies the <c>none</c> attestation statement format (WebAuthn §8.7): an empty statement that attests nothing.
+/// </summary>
 public sealed class None : AttestationVerifier
 {
+    /// <inheritdoc/>
     public override ValueTask<VerifyAttestationResult> VerifyAsync(VerifyAttestationRequest request)
     {
         if (request.AttStmt.Count != 0)

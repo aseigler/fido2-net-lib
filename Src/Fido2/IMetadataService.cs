@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 
 namespace Fido2NetLib;
 
+/// <summary>
+/// Looks authenticators up by AAGUID during registration, so that attestation can be checked against the manufacturer's declared trust anchors and status.
+/// </summary>
 public interface IMetadataService
 {
     /// <summary>

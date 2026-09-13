@@ -45,10 +45,19 @@ public class RegisteredPublicKeyCredential
     /// </summary>
     public bool IsBackedUp { get; init; }
 
+    /// <summary>
+    /// The AAGUID of the authenticator model that created the credential; all zeros when the authenticator chose not to say.
+    /// </summary>
     public Guid AaGuid { get; init; }
 
+    /// <summary>
+    /// The account the credential was registered to.
+    /// </summary>
     public Fido2User User { get; init; }
 
+    /// <summary>
+    /// The attestation statement format identifier the authenticator used, such as <c>packed</c> or <c>none</c>.
+    /// </summary>
     public string AttestationFormat { get; init; }
 
     /// <summary>

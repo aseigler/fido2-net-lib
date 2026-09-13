@@ -221,6 +221,9 @@ public static class Fido2NetLibBuilderExtensions
 /// </summary>
 public interface IFido2NetLibBuilder
 {
+    /// <summary>
+    /// The service collection the library is being registered into.
+    /// </summary>
     IServiceCollection Services { get; }
 }
 

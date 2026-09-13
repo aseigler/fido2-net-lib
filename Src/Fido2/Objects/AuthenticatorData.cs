@@ -8,6 +8,14 @@ using Fido2NetLib.Exceptions;
 
 namespace Fido2NetLib.Objects;
 
+/// <summary>
+/// The authenticator data an authenticator returns (WebAuthn §6.1): the RP ID hash, flags, signature counter, and, when creating a credential, the attested credential data, plus any extension outputs.
+/// </summary>
+/// <param name="rpIdHash">The SHA-256 hash of the RP ID the credential is scoped to.</param>
+/// <param name="flags">The UP, UV, BE, BS, AT and ED flags.</param>
+/// <param name="signCount">The signature counter.</param>
+/// <param name="acd">The attested credential data, or <see langword="null"/> when the AT flag is clear.</param>
+/// <param name="extensions">The extension outputs, or <see langword="null"/> when the ED flag is clear.</param>
 public sealed class AuthenticatorData(
     byte[] rpIdHash,
     AuthenticatorFlags flags,
@@ -92,6 +100,9 @@ public sealed class AuthenticatorData(
 
     private byte[]? _data = null;
 
+    /// <summary>
+    /// Encodes the structure as the authenticator returns it.
+    /// </summary>
     public byte[] ToByteArray()
     {
         if (_data != null)
@@ -116,6 +127,10 @@ public sealed class AuthenticatorData(
         return writer.WrittenSpan.ToArray();
     }
 
+    /// <summary>
+    /// Parses authenticator data as the authenticator returned it.
+    /// </summary>
+    /// <exception cref="Fido2VerificationException">The bytes are not well-formed authenticator data.</exception>
     public static AuthenticatorData Parse(byte[] data)
     {
         if (data is null)

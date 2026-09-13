@@ -8,13 +8,34 @@ using Microsoft.Extensions.Logging;
 
 namespace Fido2NetLib;
 
+/// <summary>
+/// An <see cref="IMetadataService"/> that reads its repositories' BLOBs through two caches: a memory cache for fast lookups, and a distributed cache that keeps the last good BLOB across restarts and outages of the metadata source. Registered by <c>AddCachedMetadataService()</c>.
+/// </summary>
+/// <remarks>
+/// A BLOB is refreshed no later than its own <c>nextUpdate</c>; a fetch that fails falls back to the distributed copy, so a metadata outage does not fail registrations.
+/// </remarks>
 public class DistributedCacheMetadataService : IMetadataService, IMetadataServiceAttestationCertificateLookup
 {
+    /// <summary>
+    /// The cache that outlives the process.
+    /// </summary>
     protected readonly IDistributedCache _distributedCache;
+    /// <summary>
+    /// The in-process cache of parsed BLOBs.
+    /// </summary>
     protected readonly IMemoryCache _memoryCache;
+    /// <summary>
+    /// The clock cache expiry is computed against.
+    /// </summary>
     protected readonly ISystemClock _systemClock;
 
+    /// <summary>
+    /// The metadata sources, consulted in order.
+    /// </summary>
     protected readonly List<IMetadataRepository> _repositories;
+    /// <summary>
+    /// Where fetch failures are reported.
+    /// </summary>
     protected readonly ILogger<DistributedCacheMetadataService> _logger;
 
     /// <summary>
@@ -37,8 +58,19 @@ public class DistributedCacheMetadataService : IMetadataService, IMetadataServic
     /// </summary>
     protected readonly TimeSpan _defaultDistributedCacheInterval = TimeSpan.FromDays(30);
 
+    /// <summary>
+    /// The prefix of every cache key this service writes, versioned so a change in cached shape does not read stale entries.
+    /// </summary>
     protected const string CACHE_PREFIX = nameof(DistributedCacheMetadataService) + ":V2";
 
+    /// <summary>
+    /// Initializes the service.
+    /// </summary>
+    /// <param name="repositories">The metadata sources, consulted in order.</param>
+    /// <param name="distributedCache">Keeps the last good BLOB of each repository across restarts.</param>
+    /// <param name="memoryCache">Keeps the parsed BLOB of each repository for fast lookups.</param>
+    /// <param name="logger">Where fetch failures are reported.</param>
+    /// <param name="systemClock">The clock cache expiry is computed against.</param>
     public DistributedCacheMetadataService(
         IEnumerable<IMetadataRepository> repositories,
         IDistributedCache distributedCache,
@@ -55,16 +87,25 @@ public class DistributedCacheMetadataService : IMetadataService, IMetadataServic
         _systemClock = systemClock;
     }
 
+    /// <summary>
+    /// Whether any repository is the conformance tool's, in which case verification applies the tool's rules.
+    /// </summary>
     public virtual bool ConformanceTesting()
     {
         return _repositories.Any(o => o.GetType() == typeof(ConformanceMetadataRepository));
     }
 
+    /// <summary>
+    /// The cache key under which <paramref name="repository"/>'s BLOB is stored.
+    /// </summary>
     protected virtual string GetBlobCacheKey(IMetadataRepository repository)
     {
         return $"{CACHE_PREFIX}:{repository.GetType().Name}:TOC";
     }
 
+    /// <summary>
+    /// When the BLOB says it will next be updated, or <see langword="null"/> if it does not say.
+    /// </summary>
     protected virtual DateTimeOffset? GetNextUpdateTimeFromPayload(MetadataBLOBPayload blob)
     {
         if (!string.IsNullOrWhiteSpace(blob?.NextUpdate)
@@ -81,6 +122,9 @@ public class DistributedCacheMetadataService : IMetadataService, IMetadataServic
         return null;
     }
 
+    /// <summary>
+    /// When the memory copy of a BLOB should expire: the default interval from now, but no later than the BLOB's own next update.
+    /// </summary>
     protected virtual DateTimeOffset GetMemoryCacheAbsoluteExpiryTime(DateTimeOffset? nextUpdateTime)
     {
         var expiryTime = _systemClock.UtcNow.GetNextIncrement(_defaultMemoryCacheInterval);
@@ -112,6 +156,9 @@ public class DistributedCacheMetadataService : IMetadataService, IMetadataServic
         return _systemClock.UtcNow.Add(_defaultDistributedCacheInterval);
     }
 
+    /// <summary>
+    /// Fetches the BLOB from <paramref name="repository"/>, logging and rethrowing any failure.
+    /// </summary>
     protected virtual async Task<MetadataBLOBPayload> GetRepositoryPayloadWithErrorHandling(IMetadataRepository repository, CancellationToken cancellationToken = default)
     {
         try
@@ -125,6 +172,9 @@ public class DistributedCacheMetadataService : IMetadataService, IMetadataServic
         }
     }
 
+    /// <summary>
+    /// Writes a freshly fetched BLOB to the distributed cache.
+    /// </summary>
     protected virtual async Task StoreDistributedCachedBlob(IMetadataRepository repository, MetadataBLOBPayload payload, CancellationToken cancellationToken = default)
     {
         await _distributedCache.SetStringAsync(
@@ -137,6 +187,9 @@ public class DistributedCacheMetadataService : IMetadataService, IMetadataServic
             cancellationToken);
     }
 
+    /// <summary>
+    /// Returns the BLOB from the distributed cache if it is current, fetching and storing a fresh one otherwise; a failed fetch falls back to a stale cached copy rather than failing.
+    /// </summary>
     protected virtual async Task<MetadataBLOBPayload> GetDistributedCachedBlob(IMetadataRepository repository, CancellationToken cancellationToken = default)
     {
         var cacheKey = GetBlobCacheKey(repository);
@@ -177,6 +230,9 @@ public class DistributedCacheMetadataService : IMetadataService, IMetadataServic
         return repoBlob;
     }
 
+    /// <summary>
+    /// Returns the BLOB from the memory cache, filling it from the distributed cache or the repository when needed.
+    /// </summary>
     protected virtual async Task<MetadataBLOBPayload> GetMemoryCachedPayload(IMetadataRepository repository, CancellationToken cancellationToken = default)
     {
         var cacheKey = GetBlobCacheKey(repository);
@@ -200,11 +256,13 @@ public class DistributedCacheMetadataService : IMetadataService, IMetadataServic
         return memCacheEntry;
     }
 
+    /// <inheritdoc/>
     public async Task<MetadataBLOBPayloadEntry> GetEntryAsync(Guid aaguid, CancellationToken cancellationToken = default)
     {
         return await GetEntryAsync(aaguid, attestationCertificates: null, cancellationToken);
     }
 
+    /// <inheritdoc/>
     public async Task<MetadataBLOBPayloadEntry> GetEntryAsync(Guid aaguid, X509Certificate2[] attestationCertificates, CancellationToken cancellationToken = default)
     {
         var memCacheEntry = await _memoryCache.GetOrCreateAsync<MetadataBLOBPayloadEntry>(

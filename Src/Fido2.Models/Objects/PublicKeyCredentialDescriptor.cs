@@ -11,9 +11,15 @@ namespace Fido2NetLib.Objects;
 /// </summary>
 public sealed class PublicKeyCredentialDescriptor
 {
+    /// <summary>
+    /// Describes a public-key credential by its ID, with no transport hints.
+    /// </summary>
     public PublicKeyCredentialDescriptor(byte[] id)
         : this(PublicKeyCredentialType.PublicKey, id, null) { }
 
+    /// <summary>
+    /// Describes a credential by type and ID, with the transports its authenticator reported when it was registered.
+    /// </summary>
     [JsonConstructor]
     public PublicKeyCredentialDescriptor(PublicKeyCredentialType type, byte[] id, AuthenticatorTransport[]? transports = null)
     {

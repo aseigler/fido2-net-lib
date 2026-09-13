@@ -14,6 +14,9 @@ public sealed class AuthenticatorLargeBlobsResponse
     [CborMember(0x01)]
     public byte[]? Config { get; set; }
 
+    /// <summary>
+    /// Decodes the response map of an authenticatorLargeBlobs read.
+    /// </summary>
     public static AuthenticatorLargeBlobsResponse FromCborObject(CborObject cbor)
     {
         var result = new AuthenticatorLargeBlobsResponse();

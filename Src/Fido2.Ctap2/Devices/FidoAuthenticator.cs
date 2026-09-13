@@ -5,8 +5,15 @@ using Fido2NetLib.Cbor;
 using Fido2NetLib.Ctap2;
 using Fido2NetLib.Objects;
 
+/// <summary>
+/// A CTAP2 authenticator reached over some transport. Derive from it and implement <see cref="ExecuteCommandAsync"/> to send a command's payload and return the response bytes; the rest of the protocol is here.
+/// </summary>
 public abstract class FidoAuthenticator
 {
+    /// <summary>
+    /// Creates a credential.
+    /// </summary>
+    /// <exception cref="Fido2NetLib.Ctap2.Exceptions.CtapException">The authenticator returned an error status.</exception>
     public async ValueTask<AuthenticatorMakeCredentialResponse> MakeCredentialAsync(AuthenticatorMakeCredentialCommand command)
     {
         var result = await ExecuteCommandAsync(command);
@@ -16,6 +23,10 @@ public abstract class FidoAuthenticator
         return AuthenticatorMakeCredentialResponse.FromCborObject(result.GetCborObject());
     }
 
+    /// <summary>
+    /// Signs with an existing credential.
+    /// </summary>
+    /// <exception cref="Fido2NetLib.Ctap2.Exceptions.CtapException">The authenticator returned an error status.</exception>
     public async ValueTask<AuthenticatorGetAssertionResponse> GetAssertionAsync(AuthenticatorGetAssertionCommand command)
     {
         var result = await ExecuteCommandAsync(command);
@@ -25,6 +36,10 @@ public abstract class FidoAuthenticator
         return AuthenticatorGetAssertionResponse.FromCborObject(result.GetCborObject());
     }
 
+    /// <summary>
+    /// Reports what the authenticator supports: versions, extensions, options, AAGUID and limits.
+    /// </summary>
+    /// <exception cref="Fido2NetLib.Ctap2.Exceptions.CtapException">The authenticator returned an error status.</exception>
     public async ValueTask<AuthenticatorGetInfoResponse> GetInfoAsync()
     {
         var result = await ExecuteCommandAsync(new AuthenticatorGetInfoCommand());
@@ -35,6 +50,10 @@ public abstract class FidoAuthenticator
     }
 
 
+    /// <summary>
+    /// Runs one authenticatorClientPIN operation.
+    /// </summary>
+    /// <exception cref="Fido2NetLib.Ctap2.Exceptions.CtapException">The authenticator returned an error status.</exception>
     public async ValueTask<AuthenticatorClientPinResponse> ExecuteClientPinCommandAsync(AuthenticatorClientPinCommand command)
     {
         var result = await ExecuteCommandAsync(command);
@@ -44,6 +63,10 @@ public abstract class FidoAuthenticator
         return AuthenticatorClientPinResponse.FromCborObject(result.GetCborObject());
     }
 
+    /// <summary>
+    /// Wipes the authenticator. Most authenticators only allow this shortly after power-up and with a touch.
+    /// </summary>
+    /// <exception cref="Fido2NetLib.Ctap2.Exceptions.CtapException">The authenticator returned an error status.</exception>
     public async ValueTask<AuthenticatorResetResponse> ResetAsync()
     {
         var result = await ExecuteCommandAsync(new AuthenticatorResetCommand());
@@ -53,6 +76,10 @@ public abstract class FidoAuthenticator
         return new AuthenticatorResetResponse();
     }
 
+    /// <summary>
+    /// Fetches the next assertion after a <see cref="GetAssertionAsync"/> that reported more than one.
+    /// </summary>
+    /// <exception cref="Fido2NetLib.Ctap2.Exceptions.CtapException">The authenticator returned an error status.</exception>
     public async ValueTask<AuthenticatorGetNextAssertionResponse> GetNextAssertionAsync()
     {
         var result = await ExecuteCommandAsync(new AuthenticatorGetNextAssertionCommand());
@@ -73,6 +100,10 @@ public abstract class FidoAuthenticator
         result.CheckStatus();
     }
 
+    /// <summary>
+    /// Runs one authenticatorConfig operation.
+    /// </summary>
+    /// <exception cref="Fido2NetLib.Ctap2.Exceptions.CtapException">The authenticator returned an error status.</exception>
     public async ValueTask<AuthenticatorConfigResponse> ExecuteConfigCommandAsync(AuthenticatorConfigCommand command)
     {
         var result = await ExecuteCommandAsync(command);
@@ -82,6 +113,10 @@ public abstract class FidoAuthenticator
         return new AuthenticatorConfigResponse();
     }
 
+    /// <summary>
+    /// Runs one authenticatorBioEnrollment operation.
+    /// </summary>
+    /// <exception cref="Fido2NetLib.Ctap2.Exceptions.CtapException">The authenticator returned an error status.</exception>
     public async ValueTask<AuthenticatorBioEnrollmentResponse> ExecuteBioEnrollmentCommandAsync(AuthenticatorBioEnrollmentCommand command)
     {
         var result = await ExecuteCommandAsync(command);
@@ -294,6 +329,10 @@ public abstract class FidoAuthenticator
         return PinUvAuthProtocol.Select(pinUvAuthProtocol).Authenticate(pinUvAuthToken, message);
     }
 
+    /// <summary>
+    /// Runs one authenticatorCredentialManagement operation.
+    /// </summary>
+    /// <exception cref="Fido2NetLib.Ctap2.Exceptions.CtapException">The authenticator returned an error status.</exception>
     public async ValueTask<AuthenticatorCredentialManagementResponse> ExecuteCredentialManagementCommandAsync(AuthenticatorCredentialManagementCommand command)
     {
         var result = await ExecuteCommandAsync(command);
@@ -448,6 +487,10 @@ public abstract class FidoAuthenticator
 
     private const int DefaultMaxFragmentLength = 960; // maxMsgSize default (1024) - 64
 
+    /// <summary>
+    /// Runs one authenticatorLargeBlobs operation.
+    /// </summary>
+    /// <exception cref="Fido2NetLib.Ctap2.Exceptions.CtapException">The authenticator returned an error status.</exception>
     public async ValueTask<AuthenticatorLargeBlobsResponse> ExecuteLargeBlobsCommandAsync(AuthenticatorLargeBlobsCommand command)
     {
         var result = await ExecuteCommandAsync(command);
@@ -565,6 +608,10 @@ public abstract class FidoAuthenticator
 
     // Helper APIs --
 
+    /// <summary>
+    /// How many PIN attempts remain before the PIN is blocked.
+    /// </summary>
+    /// <exception cref="Fido2NetLib.Ctap2.Exceptions.CtapException">The authenticator returned an error status.</exception>
     public async ValueTask<int> GetRetriesAsync()
     {
         var command = new AuthenticatorClientPinCommand(pinUvAuthProtocol: 0x01, subCommand: AuthenticatorClientPinSubCommand.GetPinRetries);
@@ -932,5 +979,8 @@ public abstract class FidoAuthenticator
         return new NegotiateSharedSecretResult(authenticatorKey, platformKey, sharedSecret);
     }
 
+    /// <summary>
+    /// Sends <see cref="CtapCommand.GetPayload"/> over the transport and returns the status byte and response data the authenticator answered with.
+    /// </summary>
     protected abstract ValueTask<FidoAuthenticatorResponse> ExecuteCommandAsync(CtapCommand command);
 }

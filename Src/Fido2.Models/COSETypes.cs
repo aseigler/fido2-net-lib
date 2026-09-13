@@ -189,6 +189,11 @@ public static class COSE
         P256K = 8
     }
 
+    /// <summary>
+    /// Maps an X.509 public key algorithm OID to the COSE key type it corresponds to.
+    /// </summary>
+    /// <param name="oid">The <c>subjectPublicKeyInfo</c> algorithm OID: ecPublicKey, rsaEncryption or Ed25519.</param>
+    /// <exception cref="Exception">The OID is none of those.</exception>
     public static KeyType GetKeyTypeFromOid(string oid)
     {
         return oid switch

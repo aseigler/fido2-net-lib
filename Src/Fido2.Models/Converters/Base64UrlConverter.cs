@@ -15,6 +15,9 @@ public sealed class Base64UrlConverter : JsonConverter<byte[]>
     /// </summary>
     public static bool EnableRelaxedDecoding { get; set; }
 
+    /// <summary>
+    /// Reads a base64url string as bytes. With <see cref="EnableRelaxedDecoding"/>, ordinary base64 is accepted too.
+    /// </summary>
     public override byte[] Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         byte[]? rentedBuffer = null;
@@ -81,6 +84,9 @@ public sealed class Base64UrlConverter : JsonConverter<byte[]>
         }
     }
 
+    /// <summary>
+    /// Writes the bytes as an unpadded base64url string.
+    /// </summary>
     public override void Write(Utf8JsonWriter writer, byte[] value, JsonSerializerOptions options)
     {
         var rentedBuffer = ArrayPool<byte>.Shared.Rent(Base64Url.GetEncodedLength(value.Length));

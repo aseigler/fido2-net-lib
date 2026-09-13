@@ -14,6 +14,9 @@ namespace Fido2NetLib;
 /// </summary>
 public class AuthenticatorResponse
 {
+    /// <summary>
+    /// Initializes the client data from its members; used when deserializing.
+    /// </summary>
     [JsonConstructor]
     public AuthenticatorResponse(string type, byte[] challenge, string origin) // for deserialization
     {
@@ -22,6 +25,10 @@ public class AuthenticatorResponse
         Origin = origin;
     }
 
+    /// <summary>
+    /// Parses the client data JSON as the client serialized it.
+    /// </summary>
+    /// <exception cref="Fido2VerificationException">The JSON is malformed or is not a client data object.</exception>
     protected AuthenticatorResponse(ReadOnlySpan<byte> utf8EncodedJson)
     {
         if (utf8EncodedJson.Length is 0)
@@ -51,22 +58,44 @@ public class AuthenticatorResponse
         TokenBinding = response.TokenBinding;
     }
 
+    /// <summary>
+    /// How many of the configured origins an origin-mismatch error message lists before truncating.
+    /// </summary>
     public const int MAX_ORIGINS_TO_PRINT = 5;
 
+    /// <summary>
+    /// The ceremony type: <c>webauthn.create</c> for registration, <c>webauthn.get</c> for authentication.
+    /// </summary>
     [JsonPropertyName("type")]
     public string Type { get; }
 
+    /// <summary>
+    /// The challenge the client saw, which must be the one the relying party issued.
+    /// </summary>
     [JsonConverter(typeof(Base64UrlConverter))]
     [JsonPropertyName("challenge")]
     public byte[] Challenge { get; }
 
+    /// <summary>
+    /// The origin the client was running in, which must be one the relying party expects.
+    /// </summary>
     [JsonPropertyName("origin")]
     public string Origin { get; }
 
     // [Obsolete("This property is not used and will be removed in a future version once the conformance tool stops testing for it.")]
+    /// <summary>
+    /// The token binding the client reports, if any. Token binding never saw deployment and was dropped from WebAuthn Level 3.
+    /// </summary>
     [JsonPropertyName("tokenBinding")]
     public TokenBindingDto? TokenBinding { get; set; }
 
+    /// <summary>
+    /// Verifies the client data members common to both ceremonies: the type, the challenge, the origin and any token binding.
+    /// </summary>
+    /// <param name="fullyQualifiedExpectedOrigins">The origins the relying party accepts, each as scheme, host and non-default port.</param>
+    /// <param name="originalChallenge">The challenge the options were issued with.</param>
+    /// <param name="requestTokenBindingId">The token binding ID of the request, if token binding was used.</param>
+    /// <exception cref="Fido2VerificationException">A member is missing or does not match.</exception>
     protected void BaseVerify(IReadOnlySet<string> fullyQualifiedExpectedOrigins, ReadOnlySpan<byte> originalChallenge, byte[]? requestTokenBindingId)
     {
         if (Type is not "webauthn.create" && Type is not "webauthn.get")

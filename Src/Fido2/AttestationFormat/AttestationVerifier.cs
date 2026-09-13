@@ -9,15 +9,33 @@ using Fido2NetLib.Objects;
 
 namespace Fido2NetLib;
 
+/// <summary>
+/// Verifies an attestation statement of one format, as WebAuthn §8 specifies for each. Obtain one with <see cref="Create"/>.
+/// </summary>
 public abstract class AttestationVerifier
 {
+    /// <summary>
+    /// Verifies the attestation statement and returns the attestation type it establishes and the certificate chain that establishes it.
+    /// </summary>
+    /// <param name="attStmt">The attestation statement from the attestation object.</param>
+    /// <param name="authenticatorData">The authenticator data the statement covers.</param>
+    /// <param name="clientDataHash">The SHA-256 hash of the client data JSON.</param>
+    /// <exception cref="Fido2VerificationException">The statement does not verify.</exception>
     public ValueTask<VerifyAttestationResult> VerifyAsync(CborMap attStmt, AuthenticatorData authenticatorData, byte[] clientDataHash)
     {
         return VerifyAsync(new VerifyAttestationRequest(attStmt, authenticatorData, clientDataHash));
     }
 
+    /// <summary>
+    /// Verifies the attestation statement and returns the attestation type it establishes and the certificate chain that establishes it.
+    /// </summary>
+    /// <exception cref="Fido2VerificationException">The statement does not verify.</exception>
     public abstract ValueTask<VerifyAttestationResult> VerifyAsync(VerifyAttestationRequest request);
 
+    /// <summary>
+    /// The verifier for an attestation statement format identifier, such as <c>packed</c> or <c>tpm</c>.
+    /// </summary>
+    /// <exception cref="Fido2VerificationException">The format is not one the library implements.</exception>
     public static AttestationVerifier Create(string formatIdentifier)
     {
         #pragma warning disable format

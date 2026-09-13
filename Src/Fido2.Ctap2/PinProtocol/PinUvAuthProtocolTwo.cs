@@ -18,12 +18,16 @@ namespace Fido2NetLib.Ctap2;
 /// </remarks>
 public sealed class PinUvAuthProtocolTwo : IPinUvAuthProtocol
 {
+    /// <summary>
+    /// The one instance; the protocol keeps no state.
+    /// </summary>
     public static readonly PinUvAuthProtocolTwo Instance = new();
 
     private static readonly byte[] ZeroSalt32 = new byte[32];
     private static readonly byte[] HmacKeyInfo = "CTAP2 HMAC key"u8.ToArray();
     private static readonly byte[] AesKeyInfo = "CTAP2 AES key"u8.ToArray();
 
+    /// <inheritdoc/>
     public int Version => 2;
 
     /// <summary>
@@ -91,6 +95,7 @@ public sealed class PinUvAuthProtocolTwo : IPinUvAuthProtocol
         return HMACSHA256.HashData(hmacKey, message);
     }
 
+    /// <inheritdoc/>
     public bool Verify(byte[] key, ReadOnlySpan<byte> message, byte[] signature)
     {
         if (signature.Length != 32)

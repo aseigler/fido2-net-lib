@@ -6,6 +6,9 @@ using Fido2NetLib.Exceptions;
 
 namespace Fido2NetLib.Objects;
 
+/// <summary>
+/// The attested credential data an authenticator adds to its authenticator data when creating a credential (WebAuthn §6.5.2): the AAGUID, the credential ID and the credential public key.
+/// </summary>
 public sealed class AttestedCredentialData
 {
     /// <summary>
@@ -51,11 +54,17 @@ public sealed class AttestedCredentialData
     /// </summary>
     public CredentialPublicKey CredentialPublicKey { get; }
 
+    /// <summary>
+    /// A human-readable summary of the fields.
+    /// </summary>
     public override string ToString()
     {
         return $"AttestedCredentialData(AAGUID:{AaGuid}, CredentialId: {Convert.ToHexString(CredentialId)}, CredentialPublicKey: {CredentialPublicKey})";
     }
 
+    /// <summary>
+    /// Encodes the structure as it appears in authenticator data.
+    /// </summary>
     public byte[] ToByteArray()
     {
         var writer = new ArrayBufferWriter<byte>(16 + 2 + CredentialId.Length + 512);
@@ -65,6 +74,9 @@ public sealed class AttestedCredentialData
         return writer.WrittenSpan.ToArray();
     }
 
+    /// <summary>
+    /// Encodes the structure, as it appears in authenticator data, into <paramref name="writer"/>.
+    /// </summary>
     public void WriteTo(IBufferWriter<byte> writer)
     {
         writer.WriteGuidBigEndian(AaGuid);

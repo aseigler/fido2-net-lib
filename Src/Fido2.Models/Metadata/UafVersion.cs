@@ -10,6 +10,9 @@ namespace Fido2NetLib;
 /// </remarks>
 public readonly struct UafVersion : IEquatable<UafVersion>
 {
+    /// <summary>
+    /// Initializes a version from its major and minor numbers.
+    /// </summary>
     [JsonConstructor]
     public UafVersion(ushort major, ushort minor)
     {
@@ -29,27 +32,38 @@ public readonly struct UafVersion : IEquatable<UafVersion>
     [JsonPropertyName("minor")]
     public ushort Minor { get; }
 
+    /// <summary>
+    /// Two versions are equal when both numbers match.
+    /// </summary>
     public bool Equals(UafVersion other)
     {
         return Major == other.Major
             && Minor == other.Minor;
     }
 
+    /// <inheritdoc/>
     public override bool Equals(object? obj)
     {
         return obj is UafVersion other && Equals(other);
     }
 
+    /// <inheritdoc/>
     public override int GetHashCode()
     {
         return HashCode.Combine(Major, Minor);
     }
 
+    /// <summary>
+    /// Two versions are equal when both numbers match.
+    /// </summary>
     public static bool operator ==(UafVersion left, UafVersion right)
     {
         return left.Equals(right);
     }
 
+    /// <summary>
+    /// Two versions differ when either number differs.
+    /// </summary>
     public static bool operator !=(UafVersion left, UafVersion right)
     {
         return !left.Equals(right);

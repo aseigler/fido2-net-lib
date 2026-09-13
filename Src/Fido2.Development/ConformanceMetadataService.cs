@@ -2,13 +2,31 @@
 
 namespace Fido2NetLib;
 
+/// <summary>
+/// An <see cref="IMetadataService"/> that loads every repository's entries and statements up front, with no caching. Meant for running the FIDO conformance tool and the demo; use <c>DistributedCacheMetadataService</c> in production.
+/// </summary>
 public class ConformanceMetadataService : IMetadataService
 {
+    /// <summary>
+    /// The metadata sources.
+    /// </summary>
     protected readonly List<IMetadataRepository> _repositories;
+    /// <summary>
+    /// The loaded statements, by AAGUID.
+    /// </summary>
     protected readonly ConcurrentDictionary<Guid, MetadataStatement> _metadataStatements;
+    /// <summary>
+    /// The loaded entries, by AAGUID.
+    /// </summary>
     protected readonly ConcurrentDictionary<Guid, MetadataBLOBPayloadEntry> _entries;
+    /// <summary>
+    /// Whether <see cref="InitializeAsync"/> has completed.
+    /// </summary>
     protected bool _initialized;
 
+    /// <summary>
+    /// Initializes the service over the given sources. Call <see cref="InitializeAsync"/> before looking anything up.
+    /// </summary>
     public ConformanceMetadataService(IEnumerable<IMetadataRepository> repositories)
     {
         _repositories = repositories.ToList();
@@ -16,11 +34,17 @@ public class ConformanceMetadataService : IMetadataService
         _entries = new ConcurrentDictionary<Guid, MetadataBLOBPayloadEntry>();
     }
 
+    /// <summary>
+    /// Whether any repository is the conformance tool's, in which case verification applies the tool's rules.
+    /// </summary>
     public bool ConformanceTesting()
     {
         return _repositories[0] is ConformanceMetadataRepository;
     }
 
+    /// <summary>
+    /// The loaded entry for <paramref name="aaguid"/>, or <see langword="null"/> if no repository listed it.
+    /// </summary>
     protected virtual MetadataBLOBPayloadEntry? GetEntry(Guid aaguid)
     {
         if (!IsInitialized())
@@ -41,6 +65,9 @@ public class ConformanceMetadataService : IMetadataService
         }
     }
 
+    /// <summary>
+    /// Fetches and keeps the metadata statement for one entry.
+    /// </summary>
     protected virtual async Task LoadEntryStatementAsync(IMetadataRepository repository, MetadataBLOBPayload blob, MetadataBLOBPayloadEntry entry, CancellationToken cancellationToken)
     {
         if (entry.AaGuid.HasValue)
@@ -54,6 +81,9 @@ public class ConformanceMetadataService : IMetadataService
         }
     }
 
+    /// <summary>
+    /// Fetches a repository's BLOB and loads every entry it lists.
+    /// </summary>
     protected virtual async Task InitializeRepositoryAsync(IMetadataRepository repository, CancellationToken cancellationToken)
     {
         var blob = await repository.GetBLOBAsync(cancellationToken);
@@ -71,6 +101,9 @@ public class ConformanceMetadataService : IMetadataService
         }
     }
 
+    /// <summary>
+    /// Loads every repository. Does nothing if already initialized.
+    /// </summary>
     public virtual async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         foreach (var repository in _repositories)
@@ -80,11 +113,15 @@ public class ConformanceMetadataService : IMetadataService
         _initialized = true;
     }
 
+    /// <summary>
+    /// Whether <see cref="InitializeAsync"/> has completed.
+    /// </summary>
     public virtual bool IsInitialized()
     {
         return _initialized;
     }
 
+    /// <inheritdoc/>
     public virtual Task<MetadataBLOBPayloadEntry?> GetEntryAsync(Guid aaGuid, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(GetEntry(aaGuid));

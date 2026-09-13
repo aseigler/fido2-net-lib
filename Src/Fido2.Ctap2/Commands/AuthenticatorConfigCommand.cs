@@ -38,8 +38,10 @@ public sealed class AuthenticatorConfigCommand(
     [CborMember(0x04)]
     public byte[]? PinUvAuthParam { get; } = pinUvAuthParam;
 
+    /// <inheritdoc/>
     public override CtapCommandType Type => CtapCommandType.AuthenticatorConfig;
 
+    /// <inheritdoc/>
     protected override CborObject? GetParameters()
     {
         var cbor = new CborMap
@@ -66,16 +68,31 @@ public sealed class AuthenticatorConfigCommand(
     }
 }
 
+/// <summary>
+/// The operations of authenticatorConfig (CTAP 2.3 §6.11).
+/// </summary>
 public enum AuthenticatorConfigSubCommand
 {
     #pragma warning disable format
+    /// <summary>
+    /// Turns enterprise attestation on.
+    /// </summary>
     EnableEnterpriseAttestation = 0x01,
+    /// <summary>
+    /// Toggles whether the authenticator requires user verification for every operation.
+    /// </summary>
     ToggleAlwaysUv              = 0x02,
+    /// <summary>
+    /// Sets the minimum PIN length, and optionally which RP IDs may read it and whether a PIN change is forced.
+    /// </summary>
     SetMinPinLength             = 0x03,
 
     /// <summary>New in CTAP 2.3.</summary>
     EnableLongTouchForReset     = 0x04,
 
+    /// <summary>
+    /// Reserved for a vendor's own configuration operations.
+    /// </summary>
     VendorPrototype             = 0xFF,
     #pragma warning restore format
 }

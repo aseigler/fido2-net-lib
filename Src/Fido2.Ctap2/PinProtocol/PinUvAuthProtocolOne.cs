@@ -9,8 +9,12 @@ namespace Fido2NetLib.Ctap2;
 /// </summary>
 public sealed class PinUvAuthProtocolOne : IPinUvAuthProtocol
 {
+    /// <summary>
+    /// The one instance; the protocol keeps no state.
+    /// </summary>
     public static readonly PinUvAuthProtocolOne Instance = new();
 
+    /// <inheritdoc/>
     public int Version => 1;
 
     /// <summary>kdf(Z) = SHA-256(Z).</summary>
@@ -45,6 +49,7 @@ public sealed class PinUvAuthProtocolOne : IPinUvAuthProtocol
         return CryptoHelper.AuthenticateProtocolOne(key, message);
     }
 
+    /// <inheritdoc/>
     public bool Verify(byte[] key, ReadOnlySpan<byte> message, byte[] signature)
     {
         if (signature.Length != 16)

@@ -52,8 +52,10 @@ public sealed class AuthenticatorLargeBlobsCommand(
     [CborMember(0x06)]
     public uint? PinUvAuthProtocol { get; } = pinUvAuthProtocol;
 
+    /// <inheritdoc/>
     public override CtapCommandType Type => CtapCommandType.AuthenticatorLargeBlobs;
 
+    /// <inheritdoc/>
     protected override CborObject? GetParameters()
     {
         var cbor = new CborMap();
