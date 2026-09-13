@@ -12,6 +12,8 @@ using System.Threading.Tasks;
 
 using Fido2NetLib.Serialization;
 
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
@@ -26,7 +28,9 @@ namespace Fido2NetLib;
 /// and reusing it lets a re-fetch (once the caller's own cache has expired) receive a 304 Not Modified instead
 /// of re-downloading the full multi-megabyte BLOB when it hasn't actually changed.
 /// </remarks>
-public sealed class Fido2MetadataServiceRepository(IHttpClientFactory httpClientFactory) : IMetadataRepository
+/// <param name="httpClientFactory">Supplies the client named after this type, whose base address is the metadata service.</param>
+/// <param name="logger">Where fetches and verification steps are reported; see <see cref="MetadataLog"/> for the events.</param>
+public sealed class Fido2MetadataServiceRepository(IHttpClientFactory httpClientFactory, ILogger<Fido2MetadataServiceRepository>? logger = null) : IMetadataRepository
 {
     private static ReadOnlySpan<byte> ROOT_CERT =>
         "MIIDXzCCAkegAwIBAgILBAAAAAABIVhTCKIwDQYJKoZIhvcNAQELBQAwTDEgMB4G"u8 +
@@ -69,6 +73,7 @@ public sealed class Fido2MetadataServiceRepository(IHttpClientFactory httpClient
     ];
 
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
+    private readonly ILogger _logger = logger ?? NullLogger<Fido2MetadataServiceRepository>.Instance;
 
     private sealed record CachedRawBlob(EntityTagHeaderValue ETag, string RawBlob);
 
@@ -101,10 +106,13 @@ public sealed class Fido2MetadataServiceRepository(IHttpClientFactory httpClient
                 request.Headers.IfNoneMatch.Add(cached.ETag);
             }
 
+            _logger.FetchingBlob(httpClient.BaseAddress, conditional: cached is not null);
+
             using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
             if (response.StatusCode is HttpStatusCode.NotModified && cached is not null)
             {
+                _logger.BlobNotModified(httpClient.BaseAddress);
                 return cached.RawBlob;
             }
 
@@ -116,6 +124,7 @@ public sealed class Fido2MetadataServiceRepository(IHttpClientFactory httpClient
                     ? new CachedRawBlob(etag, rawBlob)
                     : null;
 
+                _logger.BlobDownloaded(httpClient.BaseAddress, rawBlob.Length);
                 return rawBlob;
             }
 
@@ -129,6 +138,7 @@ public sealed class Fido2MetadataServiceRepository(IHttpClientFactory httpClient
             }
 
             var delay = GetRetryDelay(response.Headers.RetryAfter, attempt);
+            _logger.BlobFetchThrottled(httpClient.BaseAddress, (int)response.StatusCode, delay, attempt + 1, MaxRetryAttempts + 1);
             await Task.Delay(delay, cancellationToken);
         }
     }
@@ -239,6 +249,8 @@ public sealed class Fido2MetadataServiceRepository(IHttpClientFactory httpClient
             throw new Fido2VerificationException("rawBLOBJwt is not valid");
         }
 
+        _logger.BlobSignatureVerified(blobAlg, blobCerts.Length);
+
         if (blobCerts.Length > 1)
         {
             certChain.ChainPolicy.ExtraStore.AddRange(blobCerts.Skip(1).ToArray());
@@ -248,11 +260,14 @@ public sealed class Fido2MetadataServiceRepository(IHttpClientFactory httpClient
         // if the root is trusted in the context we are running in, valid should be true here
         if (!certChainIsValid)
         {
+            _logger.BlobChainCheckedAgainstPinnedRoot();
+
             foreach (var element in certChain.ChainElements)
             {
                 if (element.Certificate.Issuer != element.Certificate.Subject)
                 {
                     var cdp = CryptoUtils.CDPFromCertificateExts(element.Certificate.Extensions);
+                    _logger.CheckingBlobCertificateRevocation(element.Certificate.Subject, cdp);
                     using var client = _httpClientFactory.CreateClient();
                     var crlFile = await client.GetByteArrayAsync(cdp, cancellationToken);
                     if (CryptoUtils.IsCertInCRL(crlFile, element.Certificate))
@@ -287,6 +302,8 @@ public sealed class Fido2MetadataServiceRepository(IHttpClientFactory httpClient
 
         MetadataBLOBPayload blob = JsonSerializer.Deserialize(Base64Url.DecodeFromChars(blobPayload), FidoModelSerializerContext.Default.MetadataBLOBPayload)!;
         blob.JwtAlg = blobAlg;
+
+        _logger.BlobAccepted(blob.Number, blob.Entries.Length, blob.NextUpdate);
         return blob;
     }
 }
