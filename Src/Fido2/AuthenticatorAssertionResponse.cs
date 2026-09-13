@@ -52,7 +52,7 @@ public sealed class AuthenticatorAssertionResponse : AuthenticatorResponse
     /// <param name="metadataService"></param>
     /// <param name="requestTokenBindingId">DO NOT USE - Deprecated, but kept in code due to conformance testing tool</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-    public async Task<VerifyAssertionResult> VerifyAsync(
+    public Task<VerifyAssertionResult> VerifyAsync(
         AssertionOptions options,
         Fido2Configuration config,
         byte[] storedPublicKey,
@@ -62,7 +62,42 @@ public sealed class AuthenticatorAssertionResponse : AuthenticatorResponse
         byte[]? requestTokenBindingId,
         CancellationToken cancellationToken = default)
     {
-        BaseVerify(config.FullyQualifiedOrigins, options.Challenge, requestTokenBindingId);
+        return VerifyAsync(options, config, storedPublicKey, storedSignatureCounter, isUserHandleOwnerOfCredId, metadataService, requestTokenBindingId, securePaymentConfirmation: null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Implements algorithm from https://www.w3.org/TR/webauthn/#verifying-assertion, or, when
+    /// <paramref name="securePaymentConfirmation"/> is given, the Secure Payment Confirmation variant of it from
+    /// https://www.w3.org/TR/secure-payment-confirmation/#sctn-verifying-assertion.
+    /// </summary>
+    /// <param name="options">The original assertion options that was sent to the client.</param>
+    /// <param name="config"></param>
+    /// <param name="storedPublicKey">The stored public key for this CredentialId.</param>
+    /// <param name="storedSignatureCounter">The stored counter value for this CredentialId</param>
+    /// <param name="isUserHandleOwnerOfCredId">A function that returns <see langword="true"/> if user handle is owned by the credential ID.</param>
+    /// <param name="metadataService"></param>
+    /// <param name="requestTokenBindingId">DO NOT USE - Deprecated, but kept in code due to conformance testing tool</param>
+    /// <param name="securePaymentConfirmation">What the user should have been shown, for an assertion from Secure
+    /// Payment Confirmation; the client data must then be of type <c>payment.get</c> and its <c>payment</c> member must
+    /// match. When <see langword="null"/>, a <c>payment.get</c> response is refused.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
+    public async Task<VerifyAssertionResult> VerifyAsync(
+        AssertionOptions options,
+        Fido2Configuration config,
+        byte[] storedPublicKey,
+        uint storedSignatureCounter,
+        IsUserHandleOwnerOfCredentialIdAsync isUserHandleOwnerOfCredId,
+        IMetadataService? metadataService,
+        byte[]? requestTokenBindingId,
+        SecurePaymentConfirmationExpectations? securePaymentConfirmation,
+        CancellationToken cancellationToken = default)
+    {
+        // SPC §9.1 step 13: the origin is whichever the relying party expects SPC to have been called from
+        var expectedOrigins = securePaymentConfirmation?.Origins is { } origins
+            ? origins.Select(static o => o.ToFullyQualifiedOrigin()).ToHashSet(StringComparer.Ordinal)
+            : config.FullyQualifiedOrigins;
+
+        BaseVerify(expectedOrigins, options.Challenge, requestTokenBindingId);
 
         if (Raw.Type != PublicKeyCredentialType.PublicKey)
             throw new Fido2VerificationException(Fido2ErrorCode.InvalidAssertionResponse, Fido2ErrorMessages.AssertionResponseNotPublicKey);
@@ -101,9 +136,18 @@ public sealed class AuthenticatorAssertionResponse : AuthenticatorResponse
         // 8. Let JSONtext be the result of running UTF-8 decode on the value of cData.
         // var JSONtext = Encoding.UTF8.GetBytes(cData.ToString());
 
-        // 10. Verify that the value of C.type is the string webauthn.get.
-        if (Type is not "webauthn.get")
-            throw new Fido2VerificationException(Fido2ErrorCode.InvalidAssertionResponse, Fido2ErrorMessages.AssertionResponseTypeNotWebAuthnGet);
+        // 10. Verify that the value of C.type is the string webauthn.get -- or payment.get, but only when a payment was expected.
+        // Either way round is an attack: a payment assertion sent to a login endpoint (SPC §11.1.1), or a login assertion sent as a payment.
+        if (securePaymentConfirmation is null)
+        {
+            if (Type is not "webauthn.get")
+                throw new Fido2VerificationException(Fido2ErrorCode.InvalidAssertionResponse, Fido2ErrorMessages.AssertionResponseTypeNotWebAuthnGet);
+        }
+        else
+        {
+            if (Type is not "payment.get")
+                throw new Fido2VerificationException(Fido2ErrorCode.InvalidAssertionResponse, Fido2ErrorMessages.AssertionResponseTypeNotPaymentGet);
+        }
 
         // 11. Verify that the value of C.challenge equals the base64url encoding of options.challenge.
         // 12. Verify that the value of C.origin matches the Relying Party's origin.
@@ -174,13 +218,21 @@ public sealed class AuthenticatorAssertionResponse : AuthenticatorResponse
         if (authData.SignCount > 0 && authData.SignCount <= storedSignatureCounter)
             throw new Fido2VerificationException(Fido2ErrorCode.InvalidSignCount, Fido2ErrorMessages.SignCountIsLessThanSignatureCounter);
 
+        // SPC §9.1, the steps inserted after step 13: what the browser signed is what the user should have been shown
+        byte[]? browserBoundPublicKey = null;
+
+        if (securePaymentConfirmation is not null)
+        {
+            SecurePaymentConfirmation.VerifyTransaction(Payment, securePaymentConfirmation, config.RPID);
+            browserBoundPublicKey = SecurePaymentConfirmation.VerifyBrowserBoundSignature(Payment, Raw.ClientExtensionResults?.Payment, Raw.Response.ClientDataJson);
+        }
 
         return new VerifyAssertionResult
         {
             CredentialId = Raw.RawId,
             SignCount = authData.SignCount,
-            IsBackedUp = authData.IsBackedUp
-
+            IsBackedUp = authData.IsBackedUp,
+            BrowserBoundPublicKey = browserBoundPublicKey
         };
     }
 }

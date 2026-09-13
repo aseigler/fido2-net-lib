@@ -64,4 +64,12 @@ public class AuthenticationExtensionsClientOutputs
     [JsonPropertyName("credProtect")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public CredentialProtectionPolicy? CredProtect { get; set; }
+
+    /// <summary>
+    /// The Secure Payment Confirmation extension's output: the browser-bound key's signature, when there is one.
+    /// https://www.w3.org/TR/secure-payment-confirmation/#sctn-payment-extension-registration
+    /// </summary>
+    [JsonPropertyName("payment")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public AuthenticationExtensionsPaymentOutputs? Payment { get; set; }
 }

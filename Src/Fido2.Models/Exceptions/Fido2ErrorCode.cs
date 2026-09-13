@@ -33,5 +33,6 @@ public enum Fido2ErrorCode
     UnimplementedAlgorithm,
     BackupEligibilityRequirementNotMet,
     BackupStateRequirementNotMet,
-    CredentialAlgorithmRequirementNotMet
+    CredentialAlgorithmRequirementNotMet,
+    InvalidPaymentData
 }

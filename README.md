@@ -103,6 +103,7 @@ Read more:
 - ✅ All current attestation formats: "packed", "tpm", "android-key", "android-safetynet", "fido-u2f", "apple", "apple-appattest", and "none" ([spec](https://www.iana.org/assignments/webauthn/webauthn.xhtml))
 - ✅ FIDO2 Server attestation validation via FIDO Metadata Service V3 ([spec](https://fidoalliance.org/specs/mds/fido-metadata-service-v3.0-ps-20210518.html))
 - ✅ WebAuthn extensions ([spec](https://www.w3.org/TR/webauthn/#extensions)) including PRF, Large Blob, Credential Protection
+- ✅ Secure Payment Confirmation ([spec](https://www.w3.org/TR/secure-payment-confirmation/)): payment credentials, and verification of what the user confirmed -- see [the guide](Documentation/secure-payment-confirmation.md)
 - ✅ Blazor WebAssembly support for client-side applications
 - ✅ Examples & demos (ASP.NET Core and Blazor WebAssembly)
 - ✅ Intellisense documentation
