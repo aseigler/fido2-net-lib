@@ -213,6 +213,37 @@ public sealed class PubKeyCredParam(
         RS512,
         PS512
     ];
+
+    /// <summary>
+    /// <see cref="Defaults"/> minus EdDSA: every algorithm and curve here is on NIST's FIPS-approved list
+    /// (FIPS 186-5 for ECDSA/RSA, FIPS 180-4 for the SHA-2 hashes), unlike EdDSA/Ed25519, RS1 (SHA-1), and
+    /// ES256K (secp256k1, not a NIST curve) -- none of which this library exposes here.
+    /// </summary>
+    /// <remarks>
+    /// Using this list is necessary but not sufficient for FIPS compliance. It only controls which algorithm
+    /// a well-behaved authenticator is offered at registration; it does not stop a non-conformant authenticator
+    /// from returning an unsolicited EdDSA credential, and constructing that credential's public key still runs
+    /// through <c>NSec.Cryptography</c> (which never touches the OS's FIPS-validated crypto module) before this
+    /// library's own algorithm check can reject it. A deployment that must actually guarantee FIPS-only crypto
+    /// should also build with <c>-p:DisableNSec=true</c>, and run on a host operating system that is itself in
+    /// FIPS mode, so <c>ECDsa</c>/<c>RSA</c> verification is backed by a FIPS-validated module. See
+    /// <see href="../../Documentation/building-without-nsec.md">Documentation/building-without-nsec.md</see> and
+    /// <see href="../../Documentation/fips-mode.md">Documentation/fips-mode.md</see> for the full picture,
+    /// including caveats that apply regardless of this list (legacy TPM attestation and CRL verification can
+    /// still involve SHA-1 as unavoidable interop with what real hardware and CAs already produced).
+    /// </remarks>
+    public static IReadOnlyList<PubKeyCredParam> FipsApproved =>
+    [
+        ES256,
+        RS256,
+        PS256,
+        ES384,
+        RS384,
+        PS384,
+        ES512,
+        RS512,
+        PS512
+    ];
 }
 
 /// <summary>

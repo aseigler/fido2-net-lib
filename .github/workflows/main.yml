@@ -134,6 +134,30 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
+  # Continuously proves the DisableNSec=true build switch (see Documentation/building-without-nsec.md and
+  # Documentation/fips-mode.md) still works: Src/Fido2/Fido2.csproj must build clean with NSec compiled out.
+  # This only builds that one project, not the whole solution -- the test suite itself uses NSec directly to
+  # construct Ed25519 test keys, so it does not compile on a DisableNSec=true tree.
+  build-without-nsec:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@3951f0dfe7a07e2313ec93c75700083e2005cbab # v4.3.0
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Build Fido2 with DisableNSec=true
+        run: >
+          dotnet build Src/Fido2/Fido2.csproj
+          --configuration Release
+          -p:DisableNSec=true
+
   # Pack the output into NuGet packages
   pack:
     needs: version

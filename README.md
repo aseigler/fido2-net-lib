@@ -109,6 +109,14 @@ Read more:
 - ✅ Examples & demos (ASP.NET Core and Blazor WebAssembly)
 - ✅ Intellisense documentation
 
+## Credential storage
+
+`IFido2` verifies ceremonies; it does not persist anything. Storing `Fido2User`s and their credentials is
+`ICredentialStore`'s job, and this repo ships five implementations of it -- SQL Server/PostgreSQL/SQLite/MySQL
+(any EF Core provider), MongoDB, DynamoDB, Cosmos DB (native SDK), and Redis -- plus an
+in-memory one for demos. See [Documentation/credential-stores.md](Documentation/credential-stores.md) for
+which one to pick and how to register it.
+
 ## Configuration
 
 _Only some options are mentioned here, see the [Configuration](https://github.com/passwordless-lib/fido2-net-lib/blob/master/Src/Fido2.Models/Fido2Configuration.cs) class for all options_
@@ -303,6 +311,10 @@ return Json(result);
 
 https://www.nuget.org/packages/Fido2/ and https://www.nuget.org/packages/Fido2.Models/
 
+Credential store packages (`Fido2.EntityFrameworkCore`, `Fido2.MongoDb`, `Fido2.DynamoDb`, `Fido2.Cosmos`,
+`Fido2.Redis`) are listed in
+[Documentation/credential-stores.md](Documentation/credential-stores.md).
+
 # Contributing
 
 See [Contributing](CONTRIBUTING.md) for information about contributing to the project.
@@ -310,7 +322,7 @@ See [Contributing](CONTRIBUTING.md) for information about contributing to the pr
 This project has adopted the code of conduct defined by the Contributor Covenant to clarify expected behavior in our community.
 For more information see the [.NET Foundation Code of Conduct](https://dotnetfoundation.org/code-of-conduct).
 
-For security and penetration testing, please see our [Vulnerability Disclosure Program](./VDP.md)
+For security and penetration testing, please see our [Vulnerability Disclosure Program](./SECURITY.md)
 
 ## Contributors
 

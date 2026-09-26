@@ -3,6 +3,10 @@
 Some organisations cannot take a dependency on `NSec.Cryptography` (or on the `libsodium` native library
 it carries). This page describes how to build the library without it, and exactly what you give up.
 
+If you are doing this specifically to run in a FIPS-mode environment, see
+[fips-mode.md](fips-mode.md) for the fuller picture: this switch, `PubKeyCredParam.FipsApproved`, and the
+caveats that remain either way.
+
 ## What NSec is used for
 
 Only one thing: **Ed25519 signature verification**, for credentials whose COSE algorithm is `EdDSA` (-8)
