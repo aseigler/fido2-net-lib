@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(SupportedTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Fido2NetLib.Redis</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <Nullable>enable</Nullable>
+    <Description>A Redis-backed ICredentialStore implementation for fido2-net-lib.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fido2.Models\Fido2.Models.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Fido2.Redis.Tests" />
+  </ItemGroup>
+
+</Project>

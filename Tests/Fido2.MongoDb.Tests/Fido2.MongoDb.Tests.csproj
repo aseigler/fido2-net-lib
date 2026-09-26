@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <EnableCentralPackageManagement>true</EnableCentralPackageManagement>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <!-- Mocks IMongoDatabase/IMongoCollection so the store's own logic (filters, updates, exception translation)
+         is unit-tested without Docker; the Testcontainers-backed tests above cover real server behavior. -->
+    <PackageReference Include="Moq" />
+    <PackageReference Include="MongoDB.Driver" />
+    <!-- An ephemeral MongoDB container to test against real server behaviour (indexes, atomic updates) rather
+         than mocking the driver, matching Fido2.EntityFrameworkCore.Tests' approach. -->
+    <PackageReference Include="Testcontainers.MongoDb" />
+    <!-- Lets tests skip gracefully (rather than fail) when Docker is unavailable, matching Fido2.DynamoDb.Tests. -->
+    <PackageReference Include="Xunit.SkippableFact" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Src\Fido2.MongoDb\Fido2.MongoDb.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <EnableCentralPackageManagement>true</EnableCentralPackageManagement>
+    <!-- Testcontainers pulls in SSH.NET transitively for a remote-Docker-over-SSH scenario this test project
+         never uses (we only ever talk to a local Docker daemon); every available Testcontainers version still
+         carries a known-vulnerable SSH.NET, so the advisory is suppressed here rather than upstream. This is a
+         test-only, non-shipped project (IsPackable=false). -->
+    <NoWarn>$(NoWarn);NU1903</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" PrivateAssets="All" />
+    <!-- For ServiceCollection.BuildServiceProvider() in the DI-registration test. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <!-- Mocks IAmazonDynamoDB so the store's own logic (request shapes, exception translation) is unit-tested
+         without Docker; the Testcontainers-backed tests above cover real DynamoDB Local behavior. -->
+    <PackageReference Include="Moq" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Xunit.SkippableFact" />
+    <PackageReference Include="Testcontainers" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Src\Fido2.DynamoDb\Fido2.DynamoDb.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>
