@@ -1,9 +1,13 @@
-﻿#nullable disable
+#nullable disable
 
 using Fido2NetLib.Objects;
 
-namespace Fido2NetLib.Development;
+namespace Fido2NetLib;
 
+/// <summary>
+/// The fields of <see cref="RegisteredPublicKeyCredential"/> a Relying Party needs to persist per credential,
+/// plus bookkeeping, for use with <see cref="ICredentialStore"/>.
+/// </summary>
 public class StoredCredential
 {
     /// <summary>

@@ -1,0 +1,35 @@
+{
+  "name": "@fido2-net-lib/client",
+  "version": "0.1.0",
+  "description": "Browser client for fido2-net-lib: runs WebAuthn registration/authentication ceremonies and returns the JSON shapes the .NET server library expects.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "keywords": [
+    "fido2",
+    "webauthn",
+    "passkey"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/passwordless-lib/fido2-net-lib",
+    "directory": "client"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

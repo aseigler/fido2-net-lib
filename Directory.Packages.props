@@ -10,6 +10,18 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
     <PackageVersion Include="System.Formats.Cbor" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Bcl.Memory" Version="9.0.14" />
+
+    <!-- EF Core storage provider: EF Core 9 for net8.0; net10.0 overrides these with EF Core 10 (see
+         Fido2.EntityFrameworkCore.csproj), whose ExecuteUpdate API differs. Tests run against SQLite so relational
+         behaviour (keys, indexes, conditional updates) is exercised, which the InMemory provider does not model. -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.20" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.20" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.20" />
+
+    <!-- Roslyn analyzers, shipped inside the Fido2 package -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.11.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
     
     <!-- Cryptography -->
     <PackageVersion Include="NSec.Cryptography" Version="25.4.0" />

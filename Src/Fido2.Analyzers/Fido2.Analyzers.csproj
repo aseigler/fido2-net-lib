@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Analyzers ship as netstandard2.0 so they load in any host compiler, an explicit exception to the
+         solution's net8.0/net10.0 SupportedTargetFrameworks; this is the standard Roslyn analyzer TFM. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Fido2NetLib.Analyzers</RootNamespace>
+    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <!-- RS2008 wants release-tracking files (Shipped.md/Unshipped.md), meant for analyzers with a public
+         versioned release process; this is an in-repo analyzer with none. -->
+    <NoWarn>$(NoWarn);RS2008</NoWarn>
+    <Description>Roslyn analyzers catching common fido2-net-lib integration mistakes.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+</Project>

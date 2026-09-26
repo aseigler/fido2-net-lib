@@ -4,7 +4,10 @@ using Fido2NetLib.Objects;
 
 namespace Fido2NetLib.Development;
 
-public class DevelopmentInMemoryStore
+/// <summary>
+/// An in-memory store of users and their credentials for the demos. Nothing survives a restart; a real application keeps this in its own database.
+/// </summary>
+public class DevelopmentInMemoryStore : ICredentialStore
 {
     private readonly ConcurrentDictionary<string, Fido2User> _storedUsers = new();
 
@@ -130,4 +133,55 @@ public class DevelopmentInMemoryStore
 
         return Task.FromResult(_storedUsers.Where(u => u.Value.Id.SequenceEqual(cred.UserId)).Select(u => u.Value).ToList());
     }
+
+    // ICredentialStore: async wrappers over the synchronous API above, so this store can also serve as the
+    // reference ICredentialStore implementation the demos are built against.
+
+    Task<Fido2User?> ICredentialStore.GetUserAsync(string username, CancellationToken cancellationToken)
+        => Task.FromResult(GetUser(username));
+
+    Task<Fido2User> ICredentialStore.GetOrAddUserAsync(string username, Func<Fido2User> addCallback, CancellationToken cancellationToken)
+        => Task.FromResult(GetOrAddUser(username, addCallback));
+
+    Task<List<StoredCredential>> ICredentialStore.GetCredentialsByUserAsync(Fido2User user, CancellationToken cancellationToken)
+        => Task.FromResult(GetCredentialsByUser(user));
+
+    Task<StoredCredential?> ICredentialStore.GetCredentialByIdAsync(byte[] id, CancellationToken cancellationToken)
+        => Task.FromResult(GetCredentialById(id));
+
+    Task ICredentialStore.AddCredentialToUserAsync(Fido2User user, StoredCredential credential, CancellationToken cancellationToken)
+    {
+        AddCredentialToUser(user, credential);
+        return Task.CompletedTask;
+    }
+
+    // Unlike UpdateCredentialRecord above (the demos' simplified form), this follows the ICredentialStore contract:
+    // uvInitialized is only promoted when authorized, and a counter that another sign-in has already passed is
+    // refused rather than written backwards.
+    Task ICredentialStore.UpdateCredentialRecordAsync(VerifyAssertionResult assertionResult, bool uvInitializationAuthorized, CancellationToken cancellationToken)
+    {
+        lock (_storedCredentialsLock)
+        {
+            var cred = _storedCredentials.FirstOrDefault(c => c.Descriptor.Id.AsSpan().SequenceEqual(assertionResult.CredentialId))
+                ?? throw new InvalidOperationException("No stored credential matches the asserted credential ID.");
+
+            if (!((assertionResult.SignCount == 0 && cred.SignCount == 0) || cred.SignCount < assertionResult.SignCount))
+            {
+                throw new Fido2VerificationException(
+                    Exceptions.Fido2ErrorCode.InvalidSignCount,
+                    "Another sign-in has already stored a signature counter at or above this assertion's; it may be a replay or a cloned authenticator");
+            }
+
+            cred.SignCount = assertionResult.SignCount;
+            cred.IsBackedUp = assertionResult.IsBackedUp;
+
+            if (uvInitializationAuthorized && assertionResult.IsUserVerified)
+                cred.UvInitialized = true;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    Task<bool> ICredentialStore.RemoveCredentialAsync(byte[] credentialId, CancellationToken cancellationToken)
+        => Task.FromResult(RemoveCredential(credentialId));
 }
