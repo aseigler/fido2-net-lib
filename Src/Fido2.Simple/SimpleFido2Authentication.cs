@@ -20,31 +20,76 @@ public sealed class SimpleFido2Authentication(IFido2 fido2, ICredentialStore cre
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(username);
-        options ??= new SimpleRegistrationOptions();
 
-        var user = await credentialStore.GetOrAddUserAsync(
-            username,
-            () => new Fido2User
-            {
-                Name = username,
-                DisplayName = displayName ?? username,
-                // The user handle: a fresh, random identifier, not derived from the username, per
-                // https://www.w3.org/TR/webauthn-3/#sctn-user-handle-privacy.
-                Id = RandomNumberGenerator.GetBytes(32),
-            },
-            cancellationToken)
-            .ConfigureAwait(false);
+        // Signing up is not a way into an account that already exists: that would let anyone add their own
+        // passkey to someone else's account by entering its username. Adding a credential to an existing
+        // account is InitiateAddCredentialAsync, for a user the caller has already signed in.
+        if (await credentialStore.GetUserAsync(username, cancellationToken).ConfigureAwait(false) is not null)
+        {
+            throw new InvalidOperationException(
+                $"An account named '{username}' already exists. To add a credential to it, sign the user in and call {nameof(InitiateAddCredentialAsync)}.");
+        }
+
+        // Not stored yet: CompleteRegistrationAsync creates the account once a credential for it has verified, so
+        // an abandoned sign-up does not leave the name taken.
+        var user = new Fido2User
+        {
+            Name = username,
+            DisplayName = displayName ?? username,
+            // The user handle: a fresh, random identifier, not derived from the username, per
+            // https://www.w3.org/TR/webauthn-3/#sctn-user-handle-privacy.
+            Id = RandomNumberGenerator.GetBytes(32),
+        };
+
+        return RequestNewCredential(user, [], options);
+    }
+
+    /// <inheritdoc/>
+    public async Task<CredentialCreateOptions> InitiateAddCredentialAsync(
+        string authenticatedUsername,
+        SimpleRegistrationOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(authenticatedUsername);
+
+        var user = await credentialStore.GetUserAsync(authenticatedUsername, cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"No account named '{authenticatedUsername}' is registered.");
 
         var existingCredentials = await credentialStore.GetCredentialsByUserAsync(user, cancellationToken).ConfigureAwait(false);
+
+        return RequestNewCredential(user, existingCredentials.ConvertAll(c => c.Descriptor), options);
+    }
+
+    private CredentialCreateOptions RequestNewCredential(Fido2User user, IReadOnlyList<PublicKeyCredentialDescriptor> excludeCredentials, SimpleRegistrationOptions? options)
+    {
+        options ??= new SimpleRegistrationOptions();
 
         return fido2.RequestNewCredential(new RequestNewCredentialParams
         {
             User = user,
-            ExcludeCredentials = existingCredentials.ConvertAll(c => c.Descriptor),
+            ExcludeCredentials = excludeCredentials,
             AttestationPreference = options.AttestationPreference,
             PubKeyCredParams = options.PubKeyCredParams,
             AuthenticatorSelection = options.AuthenticatorSelection,
         });
+    }
+
+    // The account a verified registration belongs to: the existing one the ceremony was started for, or -- for a
+    // sign-up -- a new one, created now. Either way it must still be the account whose user handle the options
+    // carry: if another sign-up took the name in the meantime, or the account was replaced, the credential is not
+    // attached to whoever holds the name now.
+    private async Task<Fido2User> ResolveRegisteringUserAsync(Fido2User optionsUser, CancellationToken cancellationToken)
+    {
+        var user = await credentialStore.GetUserAsync(optionsUser.Name, cancellationToken).ConfigureAwait(false)
+            ?? await credentialStore.GetOrAddUserAsync(optionsUser.Name, () => optionsUser, cancellationToken).ConfigureAwait(false);
+
+        if (!user.Id.AsSpan().SequenceEqual(optionsUser.Id))
+        {
+            throw new InvalidOperationException(
+                $"The account named '{optionsUser.Name}' is not the one this registration was started for; start the registration again.");
+        }
+
+        return user;
     }
 
     /// <inheritdoc/>
@@ -70,7 +115,7 @@ public sealed class SimpleFido2Authentication(IFido2 fido2, ICredentialStore cre
             cancellationToken)
             .ConfigureAwait(false);
 
-        var user = originalOptions.User;
+        var user = await ResolveRegisteringUserAsync(originalOptions.User, cancellationToken).ConfigureAwait(false);
 
         var credential = new StoredCredential
         {

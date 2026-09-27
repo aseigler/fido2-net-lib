@@ -148,7 +148,7 @@ public sealed class RedisCredentialStoreMockTests
     [Fact]
     public async Task GetCredentialsByUserAsync_ReturnsEmptyWithoutReadingCredentialsWhenTheIndexIsEmptyAsync()
     {
-        _db.Setup(d => d.SetMembersAsync(new RedisKey("fido2:user:frank:creds"), It.IsAny<CommandFlags>())).ReturnsAsync([]);
+        _db.Setup(d => d.SetMembersAsync(new RedisKey("fido2:usercreds:frank"), It.IsAny<CommandFlags>())).ReturnsAsync([]);
 
         var result = await _store.GetCredentialsByUserAsync(NewUser("frank", 6));
 
@@ -161,7 +161,7 @@ public sealed class RedisCredentialStoreMockTests
     {
         var credential = NewCredential();
         var hex = Convert.ToHexString(credential.Id);
-        _db.Setup(d => d.SetMembersAsync(new RedisKey("fido2:user:grace:creds"), It.IsAny<CommandFlags>())).ReturnsAsync([hex]);
+        _db.Setup(d => d.SetMembersAsync(new RedisKey("fido2:usercreds:grace"), It.IsAny<CommandFlags>())).ReturnsAsync([hex]);
         _db.Setup(d => d.StringGetAsync(
                 It.Is<RedisKey[]>(keys => keys.Length == 1 && keys[0] == new RedisKey($"fido2:cred:{hex}")),
                 It.IsAny<CommandFlags>()))
@@ -177,7 +177,7 @@ public sealed class RedisCredentialStoreMockTests
     public async Task GetCredentialsByUserAsync_SkipsAnIndexedIdThatNoLongerHasARecordAsync()
     {
         var hex = Convert.ToHexString(Guid.NewGuid().ToByteArray());
-        _db.Setup(d => d.SetMembersAsync(new RedisKey("fido2:user:henry:creds"), It.IsAny<CommandFlags>())).ReturnsAsync([hex]);
+        _db.Setup(d => d.SetMembersAsync(new RedisKey("fido2:usercreds:henry"), It.IsAny<CommandFlags>())).ReturnsAsync([hex]);
         _db.Setup(d => d.StringGetAsync(It.IsAny<RedisKey[]>(), It.IsAny<CommandFlags>())).ReturnsAsync([RedisValue.Null]);
 
         var result = await _store.GetCredentialsByUserAsync(NewUser("henry", 8));
@@ -289,9 +289,33 @@ public sealed class RedisCredentialStoreMockTests
         tx.Verify(t => t.AddCondition(It.IsAny<Condition>()), Times.Once());
         Assert.Contains(setCalls, c => c.Key == new RedisKey($"fido2:cred:{Convert.ToHexString(credential.Id)}"));
         Assert.Contains(setCalls, c => c.Key == new RedisKey($"fido2:cred:{Convert.ToHexString(credential.Id)}:owner") && c.Value == "karen");
-        Assert.Contains(setAddCalls, c => c.Key == new RedisKey("fido2:user:karen:creds") && c.Value == Convert.ToHexString(credential.Id));
+        Assert.Contains(setAddCalls, c => c.Key == new RedisKey("fido2:usercreds:karen") && c.Value == Convert.ToHexString(credential.Id));
         Assert.Contains(setAddCalls, c => c.Key == new RedisKey($"fido2:userhandle:{Convert.ToHexString(credential.UserHandle)}:creds") && c.Value == Convert.ToHexString(credential.Id));
         Assert.Equal(user.Id, credential.UserId);
+    }
+
+    [Theory]
+    [InlineData("bob:creds")]
+    [InlineData("bob:creds:x")]
+    [InlineData("")]
+    public async Task AUsernameCannotClaimAnotherUsersCredentialIndexAsync(string squatter)
+    {
+        // Usernames are chosen by whoever signs up. The user record written for the squatter must never land on
+        // a key that holds bob's credential index -- the old "user:{name}:creds" scheme put the user "bob:creds"
+        // exactly there, after which every write to bob's index failed with WRONGTYPE.
+        var userRecordKeys = new List<RedisKey>();
+        _db.Setup(d => d.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>())).ReturnsAsync(RedisValue.Null);
+        _db.Setup(d => d.StringSetAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<TimeSpan?>(), It.IsAny<bool>(), When.NotExists, It.IsAny<CommandFlags>()))
+            .Callback<RedisKey, RedisValue, TimeSpan?, bool, When, CommandFlags>((k, _, _, _, _, _) => userRecordKeys.Add(k))
+            .ReturnsAsync(true);
+        await _store.GetOrAddUserAsync(squatter, () => NewUser(squatter, 1));
+
+        var (_, setCalls, setAddCalls) = SetupTransaction(committed: true);
+        await _store.AddCredentialToUserAsync(NewUser("bob", 2), NewCredential());
+
+        var bobsKeys = setCalls.Select(c => c.Item1).Concat(setAddCalls.Select(c => c.Item1)).ToList();
+        var squatterKey = Assert.Single(userRecordKeys);
+        Assert.DoesNotContain(squatterKey, bobsKeys);
     }
 
     [Fact]
@@ -437,7 +461,7 @@ public sealed class RedisCredentialStoreMockTests
         Assert.Contains(deleteCalls, k => k == new RedisKey($"fido2:cred:{hex}"));
         Assert.Contains(deleteCalls, k => k == new RedisKey($"fido2:cred:{hex}:owner"));
         Assert.Contains(removeCalls, c => c.Key == new RedisKey($"fido2:userhandle:{Convert.ToHexString(credential.UserHandle)}:creds") && c.Value == hex);
-        Assert.Contains(removeCalls, c => c.Key == new RedisKey("fido2:user:mia:creds") && c.Value == hex);
+        Assert.Contains(removeCalls, c => c.Key == new RedisKey("fido2:usercreds:mia") && c.Value == hex);
     }
 
     [Fact]
@@ -457,7 +481,7 @@ public sealed class RedisCredentialStoreMockTests
 
         Assert.True(await _store.RemoveCredentialAsync(credential.Id));
 
-        Assert.DoesNotContain(removeCalls, c => c.Key == new RedisKey("fido2:user::creds") || c.Key.ToString()!.StartsWith("fido2:user:mia"));
+        Assert.DoesNotContain(removeCalls, c => c.Key == new RedisKey("fido2:usercreds:") || c.Key.ToString()!.StartsWith("fido2:usercreds:mia"));
         Assert.Single(removeCalls);
     }
 }

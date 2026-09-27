@@ -19,25 +19,27 @@ namespace Fido2NetLib.Simple;
 public interface ISimpleFido2Authentication
 {
     /// <summary>
-    /// Starts a registration ceremony for <paramref name="username"/>, creating the account (via
-    /// <see cref="ICredentialStore.GetOrAddUserAsync"/>) if it does not already exist.
+    /// Starts signing up a new account named <paramref name="username"/>, with a passkey as its first credential.
+    /// The account is created by <see cref="CompleteRegistrationAsync"/>, once that credential has verified.
     /// </summary>
-    /// <param name="username">
-    /// The account's username. If the account already has credentials registered, they are added to
-    /// the resulting options' exclude list, so the client does not create a redundant credential on an
-    /// authenticator that already holds one for this account.
-    /// </param>
-    /// <param name="displayName">
-    /// The account's display name, used only if this call creates a new account. Defaults to
-    /// <paramref name="username"/> when not given.
-    /// </param>
+    /// <param name="username">The new account's username.</param>
+    /// <param name="displayName">The new account's display name. Defaults to <paramref name="username"/>.</param>
     /// <param name="options">Overrides for the registration defaults; see <see cref="SimpleRegistrationOptions"/>.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
     /// <returns>The options to send to the client's <c>navigator.credentials.create()</c> call.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// An account named <paramref name="username"/> already exists. Signing up never adds a credential to an
+    /// existing account -- otherwise anyone could add their own passkey to someone else's account just by entering
+    /// its username. Use <see cref="InitiateAddCredentialAsync"/> for a user who has signed in.
+    /// </exception>
     /// <remarks>
-    /// The caller is still responsible for holding on to the returned options (e.g. in session state) and
-    /// passing them back to <see cref="CompleteRegistrationAsync"/> -- a registration ceremony is inherently a
-    /// two-step, stateless-in-between exchange, the same as with <see cref="IFido2"/> directly.
+    /// The caller is still responsible for holding on to the returned options server-side (e.g. in session state,
+    /// never round-tripped through the client) and passing them back to <see cref="CompleteRegistrationAsync"/> --
+    /// a registration ceremony is inherently a two-step, stateless-in-between exchange, the same as with
+    /// <see cref="IFido2"/> directly.
+    /// <para>
+    /// Like any sign-up form, this tells the caller whether a username is taken.
+    /// </para>
     /// </remarks>
     Task<CredentialCreateOptions> InitiateRegistrationAsync(
         string username,
@@ -46,14 +48,44 @@ public interface ISimpleFido2Authentication
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Verifies the client's registration response, then persists the new credential via
-    /// <see cref="ICredentialStore.AddCredentialToUserAsync"/>.
+    /// Starts adding another credential (a passkey on a second device, or a security key) to an existing account.
     /// </summary>
-    /// <param name="originalOptions">The options <see cref="InitiateRegistrationAsync"/> returned for this ceremony.</param>
+    /// <param name="authenticatedUsername">
+    /// The account to add the credential to. <b>This must be the user the caller has already signed in</b> -- taken
+    /// from the authenticated session, never from the request -- since whoever completes this ceremony can sign in
+    /// to that account afterwards. The account's existing credentials go in the options' exclude list, so the client
+    /// does not create a redundant credential on an authenticator that already holds one for it.
+    /// </param>
+    /// <param name="options">Overrides for the registration defaults; see <see cref="SimpleRegistrationOptions"/>.</param>
+    /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
+    /// <returns>The options to send to the client's <c>navigator.credentials.create()</c> call; complete it with <see cref="CompleteRegistrationAsync"/>.</returns>
+    /// <exception cref="InvalidOperationException">No account named <paramref name="authenticatedUsername"/> exists.</exception>
+    /// <remarks>
+    /// This is also how accounts provisioned outside this library get their first passkey: the user signs in
+    /// some other way first (a password, an existing SSO session), then adds one.
+    /// </remarks>
+    Task<CredentialCreateOptions> InitiateAddCredentialAsync(
+        string authenticatedUsername,
+        SimpleRegistrationOptions? options = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Verifies the client's registration response, creates the account if this was a sign-up, then persists the
+    /// new credential via <see cref="ICredentialStore.AddCredentialToUserAsync"/>.
+    /// </summary>
+    /// <param name="originalOptions">
+    /// The options <see cref="InitiateRegistrationAsync"/> or <see cref="InitiateAddCredentialAsync"/> returned for
+    /// this ceremony, as held server-side. Remove them from wherever they are held before calling this, so the same
+    /// challenge cannot be answered twice.
+    /// </param>
     /// <param name="attestationResponse">The client's response.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
     /// <returns>The account the credential was registered to (<paramref name="originalOptions"/>'s user).</returns>
     /// <exception cref="Fido2VerificationException">The response does not verify.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The account named in <paramref name="originalOptions"/> is no longer the one the ceremony was started for:
+    /// another sign-up took the name first, or the account was replaced. Nothing is stored.
+    /// </exception>
     Task<Fido2User> CompleteRegistrationAsync(
         CredentialCreateOptions originalOptions,
         AuthenticatorAttestationRawResponse attestationResponse,
@@ -78,6 +110,10 @@ public interface ISimpleFido2Authentication
     /// falling back to a discoverable ceremony for a caller who named a specific, nonexistent account would be
     /// a confusing, hard-to-debug behavior change instead of a clear error.
     /// </exception>
+    /// <remarks>
+    /// With a username, this tells the caller whether that account exists, and the options list its credential
+    /// IDs, as any username-first sign-in does. The usernameless ceremony reveals neither.
+    /// </remarks>
     Task<AssertionOptions> InitiateAuthenticationAsync(
         string? username = null,
         CancellationToken cancellationToken = default);
@@ -86,7 +122,11 @@ public interface ISimpleFido2Authentication
     /// Verifies the client's authentication response against the credential's stored record, then applies the
     /// resulting signature-counter/backup-state update via <see cref="ICredentialStore.UpdateCredentialRecordAsync"/>.
     /// </summary>
-    /// <param name="originalOptions">The options <see cref="InitiateAuthenticationAsync"/> returned for this ceremony.</param>
+    /// <param name="originalOptions">
+    /// The options <see cref="InitiateAuthenticationAsync"/> returned for this ceremony, as held server-side. Remove
+    /// them from wherever they are held before calling this: a passkey whose signature counter is always 0 has no
+    /// counter to catch a replayed response, so a challenge that stays usable is the only thing that would.
+    /// </param>
     /// <param name="assertionResponse">The client's response.</param>
     /// <param name="uvInitializationAuthorized">
     /// Whether promoting the credential's <c>uvInitialized</c> flag (when this assertion had user verification)

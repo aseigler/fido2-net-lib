@@ -3,8 +3,8 @@ using Fido2NetLib.Objects;
 namespace Fido2NetLib.Simple;
 
 /// <summary>
-/// The registration-time defaults <see cref="ISimpleFido2Authentication.InitiateRegistrationAsync"/> applies,
-/// and the only two of them it lets a caller override. Everything else about a registration ceremony (the
+/// The registration-time defaults <see cref="ISimpleFido2Authentication.InitiateRegistrationAsync"/> and
+/// <see cref="ISimpleFido2Authentication.InitiateAddCredentialAsync"/> apply, and the ones they let a caller override. Everything else about a registration ceremony (the
 /// exclude list, the WebAuthn extensions, attestation formats, hints) is intentionally not exposed here -- a
 /// caller who needs those uses <see cref="IFido2.RequestNewCredential"/> directly instead.
 /// </summary>

@@ -60,9 +60,14 @@ public sealed class RedisCredentialStore(IConnectionMultiplexer connectionMultip
 
     private IDatabase Database => connectionMultiplexer.GetDatabase();
 
+    // Each kind of key has its own leading segment ("user:", "usercreds:", "cred:", "userhandle:"), and none of them
+    // is a prefix of another, so no value in the variable part can turn one kind of key into another. Usernames are
+    // chosen by whoever signs up: when the per-user credential index was "user:{name}:creds", the user named
+    // "bob:creds" owned the key "user:bob:creds" -- bob's credential index -- and squatting it broke bob's
+    // registrations and sign-ins.
     private RedisKey UserKey(string username) => (RedisKey)(keyPrefix + "user:" + username);
 
-    private RedisKey UserCredentialsKey(string username) => (RedisKey)(keyPrefix + "user:" + username + ":creds");
+    private RedisKey UserCredentialsKey(string username) => (RedisKey)(keyPrefix + "usercreds:" + username);
 
     private RedisKey CredentialKey(byte[] credentialId) => (RedisKey)(keyPrefix + "cred:" + Convert.ToHexString(credentialId));
 

@@ -64,6 +64,10 @@ public sealed class SimpleFido2AuthenticationTests
 
     // --- InitiateRegistrationAsync ------------------------------------------------------------------------------
 
+    private static void SetupRequestNewCredential(Mock<IFido2> fido2, Action<RequestNewCredentialParams>? capture = null) =>
+        fido2.Setup(f => f.RequestNewCredential(It.IsAny<RequestNewCredentialParams>()))
+            .Returns((RequestNewCredentialParams p) => { capture?.Invoke(p); return NewCredentialCreateOptions(p.User); });
+
     [Fact]
     public async Task InitiateRegistrationAsync_RejectsNullOrEmptyUsernameAsync()
     {
@@ -74,71 +78,55 @@ public sealed class SimpleFido2AuthenticationTests
     }
 
     [Fact]
-    public async Task InitiateRegistrationAsync_CreatesANewUserWithARandomHandleAsync()
+    public async Task InitiateRegistrationAsync_OffersANewUserWithARandomHandleWithoutStoringItYetAsync()
     {
         var (fido2, store, facade) = NewSut();
-        Fido2User? created = null;
-        store.Setup(s => s.GetOrAddUserAsync("alice", It.IsAny<Func<Fido2User>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string _, Func<Fido2User> addCallback, CancellationToken _) => created = addCallback());
-        store.Setup(s => s.GetCredentialsByUserAsync(It.IsAny<Fido2User>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([]);
-        CredentialCreateOptions? captured = null;
-        fido2.Setup(f => f.RequestNewCredential(It.IsAny<RequestNewCredentialParams>()))
-            .Returns((RequestNewCredentialParams p) => { captured = NewCredentialCreateOptions(p.User); return captured; });
+        store.Setup(s => s.GetUserAsync("alice", It.IsAny<CancellationToken>())).ReturnsAsync((Fido2User?)null);
+        RequestNewCredentialParams? captured = null;
+        SetupRequestNewCredential(fido2, p => captured = p);
 
         var options = await facade.InitiateRegistrationAsync("alice", "Alice A.");
 
-        Assert.NotNull(created);
-        Assert.Equal("alice", created!.Name);
-        Assert.Equal("Alice A.", created.DisplayName);
-        Assert.Equal(32, created.Id.Length);
-        Assert.Same(created, options.User);
+        Assert.Equal("alice", options.User.Name);
+        Assert.Equal("Alice A.", options.User.DisplayName);
+        Assert.Equal(32, options.User.Id.Length);
+        Assert.Empty(captured!.ExcludeCredentials);
+
+        // Created by CompleteRegistrationAsync once a credential verifies, so an abandoned sign-up leaves no account.
+        store.Verify(s => s.GetOrAddUserAsync(It.IsAny<string>(), It.IsAny<Func<Fido2User>>(), It.IsAny<CancellationToken>()), Times.Never());
+        store.Verify(s => s.AddCredentialToUserAsync(It.IsAny<Fido2User>(), It.IsAny<StoredCredential>(), It.IsAny<CancellationToken>()), Times.Never());
     }
 
     [Fact]
     public async Task InitiateRegistrationAsync_DefaultsDisplayNameToUsernameAsync()
     {
-        var (fido2, store, facade) = NewSut();
-        Fido2User? created = null;
-        store.Setup(s => s.GetOrAddUserAsync("bob", It.IsAny<Func<Fido2User>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string _, Func<Fido2User> addCallback, CancellationToken _) => created = addCallback());
-        store.Setup(s => s.GetCredentialsByUserAsync(It.IsAny<Fido2User>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
-        fido2.Setup(f => f.RequestNewCredential(It.IsAny<RequestNewCredentialParams>()))
-            .Returns((RequestNewCredentialParams p) => NewCredentialCreateOptions(p.User));
+        var (fido2, _, facade) = NewSut();
+        SetupRequestNewCredential(fido2);
 
-        await facade.InitiateRegistrationAsync("bob");
+        var options = await facade.InitiateRegistrationAsync("bob");
 
-        Assert.Equal("bob", created!.DisplayName);
+        Assert.Equal("bob", options.User.DisplayName);
     }
 
     [Fact]
-    public async Task InitiateRegistrationAsync_PopulatesExcludeCredentialsForAnExistingUserAsync()
+    public async Task InitiateRegistrationAsync_RefusesAnAccountThatAlreadyExistsAsync()
     {
+        // Signing up must not be a way to add a passkey to someone else's account by entering its username.
         var (fido2, store, facade) = NewSut();
-        var user = NewUser("carol", 3);
-        var existing = new[] { NewStoredCredential(), NewStoredCredential() };
-        store.Setup(s => s.GetOrAddUserAsync("carol", It.IsAny<Func<Fido2User>>(), It.IsAny<CancellationToken>())).ReturnsAsync(user);
-        store.Setup(s => s.GetCredentialsByUserAsync(user, It.IsAny<CancellationToken>())).ReturnsAsync(existing.ToList());
-        RequestNewCredentialParams? captured = null;
-        fido2.Setup(f => f.RequestNewCredential(It.IsAny<RequestNewCredentialParams>()))
-            .Returns((RequestNewCredentialParams p) => { captured = p; return NewCredentialCreateOptions(p.User); });
+        store.Setup(s => s.GetUserAsync("carol", It.IsAny<CancellationToken>())).ReturnsAsync(NewUser("carol", 3));
 
-        await facade.InitiateRegistrationAsync("carol");
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => facade.InitiateRegistrationAsync("carol"));
 
-        Assert.Equal(2, captured!.ExcludeCredentials.Count);
-        Assert.Contains(captured.ExcludeCredentials, d => d.Id.SequenceEqual(existing[0].Id));
-        Assert.Contains(captured.ExcludeCredentials, d => d.Id.SequenceEqual(existing[1].Id));
+        Assert.Contains(nameof(ISimpleFido2Authentication.InitiateAddCredentialAsync), ex.Message);
+        fido2.Verify(f => f.RequestNewCredential(It.IsAny<RequestNewCredentialParams>()), Times.Never());
     }
 
     [Fact]
     public async Task InitiateRegistrationAsync_AppliesDefaultsWhenNoOptionsAreGivenAsync()
     {
-        var (fido2, store, facade) = NewSut();
-        store.Setup(s => s.GetOrAddUserAsync("dave", It.IsAny<Func<Fido2User>>(), It.IsAny<CancellationToken>())).ReturnsAsync(NewUser("dave", 4));
-        store.Setup(s => s.GetCredentialsByUserAsync(It.IsAny<Fido2User>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
+        var (fido2, _, facade) = NewSut();
         RequestNewCredentialParams? captured = null;
-        fido2.Setup(f => f.RequestNewCredential(It.IsAny<RequestNewCredentialParams>()))
-            .Returns((RequestNewCredentialParams p) => { captured = p; return NewCredentialCreateOptions(p.User); });
+        SetupRequestNewCredential(fido2, p => captured = p);
 
         await facade.InitiateRegistrationAsync("dave");
 
@@ -150,12 +138,9 @@ public sealed class SimpleFido2AuthenticationTests
     [Fact]
     public async Task InitiateRegistrationAsync_LetsCallerOverrideTheDefaultsAsync()
     {
-        var (fido2, store, facade) = NewSut();
-        store.Setup(s => s.GetOrAddUserAsync("erin", It.IsAny<Func<Fido2User>>(), It.IsAny<CancellationToken>())).ReturnsAsync(NewUser("erin", 5));
-        store.Setup(s => s.GetCredentialsByUserAsync(It.IsAny<Fido2User>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
+        var (fido2, _, facade) = NewSut();
         RequestNewCredentialParams? captured = null;
-        fido2.Setup(f => f.RequestNewCredential(It.IsAny<RequestNewCredentialParams>()))
-            .Returns((RequestNewCredentialParams p) => { captured = p; return NewCredentialCreateOptions(p.User); });
+        SetupRequestNewCredential(fido2, p => captured = p);
         var overriddenParams = new[] { PubKeyCredParam.ES256 };
 
         await facade.InitiateRegistrationAsync("erin", options: new SimpleRegistrationOptions
@@ -166,6 +151,48 @@ public sealed class SimpleFido2AuthenticationTests
 
         Assert.Equal(AttestationConveyancePreference.Direct, captured!.AttestationPreference);
         Assert.Same(overriddenParams, captured.PubKeyCredParams);
+    }
+
+    // --- InitiateAddCredentialAsync -----------------------------------------------------------------------------
+
+    [Fact]
+    public async Task InitiateAddCredentialAsync_RejectsNullOrEmptyUsernameAsync()
+    {
+        var (_, _, facade) = NewSut();
+
+        await Assert.ThrowsAsync<ArgumentException>(() => facade.InitiateAddCredentialAsync(""));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => facade.InitiateAddCredentialAsync(null!));
+    }
+
+    [Fact]
+    public async Task InitiateAddCredentialAsync_UsesTheExistingAccountAndExcludesItsCredentialsAsync()
+    {
+        var (fido2, store, facade) = NewSut();
+        var user = NewUser("carol", 3);
+        var existing = new[] { NewStoredCredential(), NewStoredCredential() };
+        store.Setup(s => s.GetUserAsync("carol", It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        store.Setup(s => s.GetCredentialsByUserAsync(user, It.IsAny<CancellationToken>())).ReturnsAsync(existing.ToList());
+        RequestNewCredentialParams? captured = null;
+        SetupRequestNewCredential(fido2, p => captured = p);
+
+        var options = await facade.InitiateAddCredentialAsync("carol", new SimpleRegistrationOptions { AttestationPreference = AttestationConveyancePreference.Direct });
+
+        Assert.Same(user, options.User);
+        Assert.Equal(AttestationConveyancePreference.Direct, captured!.AttestationPreference);
+        Assert.Equal(2, captured.ExcludeCredentials.Count);
+        Assert.Contains(captured.ExcludeCredentials, d => d.Id.SequenceEqual(existing[0].Id));
+        Assert.Contains(captured.ExcludeCredentials, d => d.Id.SequenceEqual(existing[1].Id));
+        store.Verify(s => s.GetOrAddUserAsync(It.IsAny<string>(), It.IsAny<Func<Fido2User>>(), It.IsAny<CancellationToken>()), Times.Never());
+    }
+
+    [Fact]
+    public async Task InitiateAddCredentialAsync_UnknownAccountThrowsAsync()
+    {
+        var (fido2, store, facade) = NewSut();
+        store.Setup(s => s.GetUserAsync("ghost", It.IsAny<CancellationToken>())).ReturnsAsync((Fido2User?)null);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => facade.InitiateAddCredentialAsync("ghost"));
+        fido2.Verify(f => f.RequestNewCredential(It.IsAny<RequestNewCredentialParams>()), Times.Never());
     }
 
     // --- CompleteRegistrationAsync ------------------------------------------------------------------------------
@@ -185,6 +212,7 @@ public sealed class SimpleFido2AuthenticationTests
     {
         var (fido2, store, facade) = NewSut();
         var user = NewUser("grace", 7);
+        store.Setup(s => s.GetUserAsync("grace", It.IsAny<CancellationToken>())).ReturnsAsync(user);
         var originalOptions = NewCredentialCreateOptions(user);
         var registered = NewRegistered(Guid.NewGuid().ToByteArray());
         fido2.Setup(f => f.MakeNewCredentialAsync(It.IsAny<MakeNewCredentialParams>(), It.IsAny<CancellationToken>())).ReturnsAsync(registered);
@@ -223,6 +251,7 @@ public sealed class SimpleFido2AuthenticationTests
     {
         var (fido2, store, facade) = NewSut();
         var user = NewUser("heidi", 8);
+        store.Setup(s => s.GetUserAsync("heidi", It.IsAny<CancellationToken>())).ReturnsAsync(user);
         var originalOptions = NewCredentialCreateOptions(user);
         fido2.Setup(f => f.MakeNewCredentialAsync(It.IsAny<MakeNewCredentialParams>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(NewRegistered(Guid.NewGuid().ToByteArray()));
@@ -241,6 +270,7 @@ public sealed class SimpleFido2AuthenticationTests
     {
         var (fido2, store, facade) = NewSut();
         var user = NewUser("ike", 15);
+        store.Setup(s => s.GetUserAsync("ike", It.IsAny<CancellationToken>())).ReturnsAsync(user);
         var originalOptions = NewCredentialCreateOptions(user);
         fido2.Setup(f => f.MakeNewCredentialAsync(It.IsAny<MakeNewCredentialParams>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(NewRegistered(Guid.NewGuid().ToByteArray()));
@@ -267,6 +297,7 @@ public sealed class SimpleFido2AuthenticationTests
         var credentialId = Guid.NewGuid().ToByteArray();
         var registered = NewRegistered(credentialId);
         var originalOptions = NewCredentialCreateOptions(registered.User);
+        store.Setup(s => s.GetUserAsync(registered.User.Name, It.IsAny<CancellationToken>())).ReturnsAsync(registered.User);
         IsCredentialIdUniqueToUserAsyncDelegate? callback = null;
         fido2.Setup(f => f.MakeNewCredentialAsync(It.IsAny<MakeNewCredentialParams>(), It.IsAny<CancellationToken>()))
             .Callback((MakeNewCredentialParams p, CancellationToken _) => callback = p.IsCredentialIdUniqueToUserCallback)
@@ -282,6 +313,63 @@ public sealed class SimpleFido2AuthenticationTests
 
         store.Setup(s => s.GetUsersByCredentialIdAsync(credentialId, It.IsAny<CancellationToken>())).ReturnsAsync([NewUser("someoneElse", 99)]);
         Assert.False(await callback(new IsCredentialIdUniqueToUserParams(credentialId, registered.User), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task CompleteRegistrationAsync_CreatesTheSignedUpAccountOnlyOnceTheCredentialVerifiesAsync()
+    {
+        var (fido2, store, facade) = NewSut();
+        var newUser = NewUser("judy", 16);
+        var originalOptions = NewCredentialCreateOptions(newUser);
+        fido2.Setup(f => f.MakeNewCredentialAsync(It.IsAny<MakeNewCredentialParams>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(NewRegistered(Guid.NewGuid().ToByteArray()));
+        store.Setup(s => s.GetUserAsync("judy", It.IsAny<CancellationToken>())).ReturnsAsync((Fido2User?)null);
+        store.Setup(s => s.GetOrAddUserAsync("judy", It.IsAny<Func<Fido2User>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string _, Func<Fido2User> addCallback, CancellationToken _) => addCallback());
+        StoredCredential? saved = null;
+        store.Setup(s => s.AddCredentialToUserAsync(newUser, It.IsAny<StoredCredential>(), It.IsAny<CancellationToken>()))
+            .Callback((Fido2User _, StoredCredential c, CancellationToken _) => saved = c)
+            .Returns(Task.CompletedTask);
+
+        var returned = await facade.CompleteRegistrationAsync(originalOptions, new AuthenticatorAttestationRawResponse());
+
+        Assert.Same(newUser, returned);
+        Assert.Equal(newUser.Id, saved!.UserHandle);
+        store.Verify(s => s.GetOrAddUserAsync("judy", It.IsAny<Func<Fido2User>>(), It.IsAny<CancellationToken>()), Times.Once());
+    }
+
+    [Fact]
+    public async Task CompleteRegistrationAsync_StoresNothingWhenTheResponseDoesNotVerifyAsync()
+    {
+        var (fido2, store, facade) = NewSut();
+        var originalOptions = NewCredentialCreateOptions(NewUser("kim", 17));
+        fido2.Setup(f => f.MakeNewCredentialAsync(It.IsAny<MakeNewCredentialParams>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Fido2VerificationException("bad"));
+
+        await Assert.ThrowsAsync<Fido2VerificationException>(() => facade.CompleteRegistrationAsync(originalOptions, new AuthenticatorAttestationRawResponse()));
+
+        store.Verify(s => s.GetOrAddUserAsync(It.IsAny<string>(), It.IsAny<Func<Fido2User>>(), It.IsAny<CancellationToken>()), Times.Never());
+        store.Verify(s => s.AddCredentialToUserAsync(It.IsAny<Fido2User>(), It.IsAny<StoredCredential>(), It.IsAny<CancellationToken>()), Times.Never());
+    }
+
+    [Theory]
+    [InlineData(true)]  // the name was taken by someone else after this sign-up began
+    [InlineData(false)] // a concurrent sign-up for the same name created it first
+    public async Task CompleteRegistrationAsync_RefusesWhenTheNamedAccountIsNotTheOneTheCeremonyWasForAsync(bool existsAlready)
+    {
+        // The options carry the user handle the ceremony was started for. Attaching the credential to whichever
+        // account holds the name now would hand that account to whoever completed this ceremony.
+        var (fido2, store, facade) = NewSut();
+        var ceremonyUser = NewUser("lena", 18);
+        var otherAccount = NewUser("lena", 19);
+        fido2.Setup(f => f.MakeNewCredentialAsync(It.IsAny<MakeNewCredentialParams>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(NewRegistered(Guid.NewGuid().ToByteArray()));
+        store.Setup(s => s.GetUserAsync("lena", It.IsAny<CancellationToken>())).ReturnsAsync(existsAlready ? otherAccount : null);
+        store.Setup(s => s.GetOrAddUserAsync("lena", It.IsAny<Func<Fido2User>>(), It.IsAny<CancellationToken>())).ReturnsAsync(otherAccount);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => facade.CompleteRegistrationAsync(NewCredentialCreateOptions(ceremonyUser), new AuthenticatorAttestationRawResponse()));
+
+        store.Verify(s => s.AddCredentialToUserAsync(It.IsAny<Fido2User>(), It.IsAny<StoredCredential>(), It.IsAny<CancellationToken>()), Times.Never());
     }
 
     // --- InitiateAuthenticationAsync ----------------------------------------------------------------------------
