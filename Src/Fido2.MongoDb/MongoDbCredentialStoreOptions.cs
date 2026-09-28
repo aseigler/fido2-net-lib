@@ -1,4 +1,4 @@
-namespace Fido2NetLib.MongoDb;
+﻿namespace Fido2NetLib.MongoDb;
 
 /// <summary>
 /// Collection names used by <see cref="MongoDbCredentialStore"/>.

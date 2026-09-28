@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 
 using Fido2NetLib.Exceptions;
 using Fido2NetLib.Objects;

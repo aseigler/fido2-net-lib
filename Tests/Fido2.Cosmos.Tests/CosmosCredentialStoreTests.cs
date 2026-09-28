@@ -1,4 +1,4 @@
-using Fido2NetLib.Exceptions;
+﻿using Fido2NetLib.Exceptions;
 using Fido2NetLib.Objects;
 
 using Microsoft.Azure.Cosmos;
@@ -52,7 +52,8 @@ public sealed class CosmosCredentialStoreTests(CosmosEmulatorFixture fixture)
     [Fact]
     public async Task GetOrAddUserAsync_CreatesTheUserOnlyOnceAsync()
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
         var store = NewStore();
 
         var user = await store.GetOrAddUserAsync("cosmos-alice", () => NewUser("cosmos-alice", 1));
@@ -65,7 +66,8 @@ public sealed class CosmosCredentialStoreTests(CosmosEmulatorFixture fixture)
     [Fact]
     public async Task GetOrAddUserAsync_ReturnsTheUserAConcurrentRequestAddedAsync()
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
 
         // The callback runs after this store found no user, so adding the same name from another store instance
         // inside it reproduces two requests racing to create one account.
@@ -83,7 +85,8 @@ public sealed class CosmosCredentialStoreTests(CosmosEmulatorFixture fixture)
     [Fact]
     public async Task AddCredentialToUserAsync_StoresTheCredentialWithTheUsersIdAsync()
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
         var store = NewStore();
         var user = await store.GetOrAddUserAsync("cosmos-bob", () => NewUser("cosmos-bob", 9));
         var credential = NewCredential();
@@ -99,7 +102,8 @@ public sealed class CosmosCredentialStoreTests(CosmosEmulatorFixture fixture)
     [Fact]
     public async Task ACredentialCanOnlyBeRegisteredOnceAsync()
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
         var store = NewStore();
         var user = await store.GetOrAddUserAsync("cosmos-onceonly", () => NewUser("cosmos-onceonly", 20));
         var id = Guid.NewGuid().ToByteArray();
@@ -111,14 +115,16 @@ public sealed class CosmosCredentialStoreTests(CosmosEmulatorFixture fixture)
     [Fact]
     public async Task ACredentialNeedsAStoredUserAsync()
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
         await Assert.ThrowsAsync<InvalidOperationException>(() => NewStore().AddCredentialToUserAsync(NewUser("cosmos-nobody", 99), NewCredential()));
     }
 
     [Fact]
     public async Task GetCredentialsByUserAsync_ReturnsOnlyThatUsersCredentialsAsync()
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
         var store = NewStore();
         var alice = await store.GetOrAddUserAsync("cosmos-alice2", () => NewUser("cosmos-alice2", 21));
         var bob = await store.GetOrAddUserAsync("cosmos-bob2", () => NewUser("cosmos-bob2", 22));
@@ -134,7 +140,8 @@ public sealed class CosmosCredentialStoreTests(CosmosEmulatorFixture fixture)
     [Fact]
     public async Task GetCredentialsByUserHandleAsync_FindsTheDiscoverableCredentialAsync()
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
         var store = NewStore();
         var user = await store.GetOrAddUserAsync("cosmos-carol", () => NewUser("cosmos-carol", 23));
         var userHandle = Guid.NewGuid().ToByteArray();
@@ -149,7 +156,8 @@ public sealed class CosmosCredentialStoreTests(CosmosEmulatorFixture fixture)
     [Fact]
     public async Task GetUsersByCredentialIdAsync_ResolvesTheOwningUserAsync()
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
         var store = NewStore();
         var user = await store.GetOrAddUserAsync("cosmos-dave", () => NewUser("cosmos-dave", 24));
         var credential = NewCredential();
@@ -163,14 +171,16 @@ public sealed class CosmosCredentialStoreTests(CosmosEmulatorFixture fixture)
     [Fact]
     public async Task GetUsersByCredentialIdAsync_ReturnsEmptyForAnUnknownCredentialAsync()
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
         Assert.Empty(await NewStore().GetUsersByCredentialIdAsync([0xde, 0xad]));
     }
 
     [Fact]
     public async Task UpdateCredentialRecordAsync_AppliesSignCountAndBackupStateAsync()
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
         var credential = await RegisteredCredentialAsync("cosmos-erin", 25, signCount: 1);
 
         await NewStore().UpdateCredentialRecordAsync(Assertion(credential.Id, 2, backedUp: true, userVerified: true));
@@ -185,7 +195,8 @@ public sealed class CosmosCredentialStoreTests(CosmosEmulatorFixture fixture)
     [Fact]
     public async Task UpdateCredentialRecordAsync_PromotesUvInitializedOnlyWhenAuthorizedAndVerifiedAsync()
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
         var credential = await RegisteredCredentialAsync("cosmos-erin2", 26, signCount: 1);
 
         await NewStore().UpdateCredentialRecordAsync(Assertion(credential.Id, 2, userVerified: false), uvInitializationAuthorized: true);
@@ -202,7 +213,8 @@ public sealed class CosmosCredentialStoreTests(CosmosEmulatorFixture fixture)
     [Fact]
     public async Task UpdateCredentialRecordAsync_UpdatesACredentialWhoseCounterIsAlwaysZeroAsync()
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
         // Most passkeys report 0 every time; the rule only applies once either counter is non-zero.
         var credential = await RegisteredCredentialAsync("cosmos-erin3", 27, signCount: 0);
 
@@ -217,7 +229,8 @@ public sealed class CosmosCredentialStoreTests(CosmosEmulatorFixture fixture)
     [InlineData(7u, 0u)]
     public async Task UpdateCredentialRecordAsync_RefusesACounterAnotherSignInHasAlreadyPassedAsync(uint alreadyStored, uint thisAssertion)
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
         // Two sign-ins both verified against a counter of 5: one stores 7 first, then the slower one arrives.
         var credential = await RegisteredCredentialAsync($"cosmos-race-{alreadyStored}-{thisAssertion}", (byte)(alreadyStored + thisAssertion + 40), signCount: 5);
         await NewStore().UpdateCredentialRecordAsync(Assertion(credential.Id, alreadyStored));
@@ -234,7 +247,8 @@ public sealed class CosmosCredentialStoreTests(CosmosEmulatorFixture fixture)
     [Fact]
     public async Task UpdateCredentialRecordAsync_RejectsAnUnknownCredentialAsync()
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
         await Assert.ThrowsAsync<InvalidOperationException>(() => NewStore().UpdateCredentialRecordAsync(Assertion([0xde, 0xad], 1)));
         await Assert.ThrowsAsync<ArgumentNullException>(() => NewStore().UpdateCredentialRecordAsync(null!));
     }
@@ -242,7 +256,8 @@ public sealed class CosmosCredentialStoreTests(CosmosEmulatorFixture fixture)
     [Fact]
     public async Task RemoveCredentialAsync_RemovesAKnownCredentialAndReportsTrueAsync()
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
         var credential = await RegisteredCredentialAsync("cosmos-removeme", 41, signCount: 0);
 
         Assert.True(await NewStore().RemoveCredentialAsync(credential.Id));
@@ -265,7 +280,8 @@ public sealed class CosmosCredentialStoreTests(CosmosEmulatorFixture fixture)
     [Fact]
     public async Task WorksThroughTheDIRegistrationAsync()
     {
-        if (!fixture.Available) return;
+        if (!fixture.Available)
+            return;
 
         var services = new ServiceCollection();
         services.AddFido2CosmosStore(_ => fixture.Container);

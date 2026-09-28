@@ -1,4 +1,4 @@
-namespace Fido2NetLib.DynamoDb;
+﻿namespace Fido2NetLib.DynamoDb;
 
 /// <summary>
 /// Table and index names used by <see cref="DynamoDbCredentialStore"/>.

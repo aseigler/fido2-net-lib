@@ -1,13 +1,10 @@
-using Fido2NetLib.Exceptions;
+﻿using Fido2NetLib.Exceptions;
 using Fido2NetLib.MongoDb;
 using Fido2NetLib.Objects;
-
 using Microsoft.Extensions.DependencyInjection;
-
-using Moq;
-
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Moq;
 
 namespace Fido2NetLib.MongoDb.Tests;
 

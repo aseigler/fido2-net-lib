@@ -1,4 +1,4 @@
-using Fido2NetLib.Exceptions;
+﻿using Fido2NetLib.Exceptions;
 using Fido2NetLib.Objects;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -54,7 +54,8 @@ public sealed class RedisCredentialStoreTests(RedisContainerFixture fixture, ITe
     [Fact]
     public async Task GetOrAddUserAsync_CreatesTheUserOnlyOnceAsync()
     {
-        if (Skip()) return;
+        if (Skip())
+            return;
         var store = NewStore();
 
         var user = await store.GetOrAddUserAsync("alice", () => NewUser("alice", 1));
@@ -67,7 +68,8 @@ public sealed class RedisCredentialStoreTests(RedisContainerFixture fixture, ITe
     [Fact]
     public async Task AddCredentialToUserAsync_StoresTheCredentialWithTheUsersIdAsync()
     {
-        if (Skip()) return;
+        if (Skip())
+            return;
         var store = NewStore();
         var user = await store.GetOrAddUserAsync("bob", () => NewUser("bob", 9));
         var credential = NewCredential();
@@ -83,7 +85,8 @@ public sealed class RedisCredentialStoreTests(RedisContainerFixture fixture, ITe
     [Fact]
     public async Task ACredentialCanOnlyBeRegisteredOnceAsync()
     {
-        if (Skip()) return;
+        if (Skip())
+            return;
         var store = NewStore();
         var user = await store.GetOrAddUserAsync("bob", () => NewUser("bob", 9));
         var id = Guid.NewGuid().ToByteArray();
@@ -95,7 +98,8 @@ public sealed class RedisCredentialStoreTests(RedisContainerFixture fixture, ITe
     [Fact]
     public async Task GetCredentialsByUserAsync_ReturnsOnlyThatUsersCredentialsAsync()
     {
-        if (Skip()) return;
+        if (Skip())
+            return;
         var store = NewStore();
         var alice = await store.GetOrAddUserAsync("alice", () => NewUser("alice", 1));
         var bob = await store.GetOrAddUserAsync("bob", () => NewUser("bob", 2));
@@ -111,7 +115,8 @@ public sealed class RedisCredentialStoreTests(RedisContainerFixture fixture, ITe
     [Fact]
     public async Task GetCredentialsByUserHandleAsync_FindsTheDiscoverableCredentialAsync()
     {
-        if (Skip()) return;
+        if (Skip())
+            return;
         var store = NewStore();
         var user = await store.GetOrAddUserAsync("carol", () => NewUser("carol", 3));
         var userHandle = new byte[] { 3, 3, 3 };
@@ -126,7 +131,8 @@ public sealed class RedisCredentialStoreTests(RedisContainerFixture fixture, ITe
     [Fact]
     public async Task GetUsersByCredentialIdAsync_ResolvesTheOwningUserAsync()
     {
-        if (Skip()) return;
+        if (Skip())
+            return;
         var store = NewStore();
         var user = await store.GetOrAddUserAsync("dave", () => NewUser("dave", 4));
         var credential = NewCredential();
@@ -140,14 +146,16 @@ public sealed class RedisCredentialStoreTests(RedisContainerFixture fixture, ITe
     [Fact]
     public async Task GetUsersByCredentialIdAsync_ReturnsEmptyForAnUnknownCredentialAsync()
     {
-        if (Skip()) return;
+        if (Skip())
+            return;
         Assert.Empty(await NewStore().GetUsersByCredentialIdAsync([0xde, 0xad]));
     }
 
     [Fact]
     public async Task UpdateCredentialRecordAsync_AppliesSignCountAndBackupStateAsync()
     {
-        if (Skip()) return;
+        if (Skip())
+            return;
         var store = NewStore();
         var user = await store.GetOrAddUserAsync("erin", () => NewUser("erin", 5));
         var credential = NewCredential(signCount: 1);
@@ -165,7 +173,8 @@ public sealed class RedisCredentialStoreTests(RedisContainerFixture fixture, ITe
     [Fact]
     public async Task UpdateCredentialRecordAsync_PromotesUvInitializedOnlyWhenAuthorizedAndVerifiedAsync()
     {
-        if (Skip()) return;
+        if (Skip())
+            return;
         var store = NewStore();
         var user = await store.GetOrAddUserAsync("erin", () => NewUser("erin", 5));
         var credential = NewCredential(signCount: 1);
@@ -185,7 +194,8 @@ public sealed class RedisCredentialStoreTests(RedisContainerFixture fixture, ITe
     [Fact]
     public async Task UpdateCredentialRecordAsync_UpdatesACredentialWhoseCounterIsAlwaysZeroAsync()
     {
-        if (Skip()) return;
+        if (Skip())
+            return;
         var store = NewStore();
         var user = await store.GetOrAddUserAsync("erin", () => NewUser("erin", 5));
         var credential = NewCredential(signCount: 0);
@@ -202,7 +212,8 @@ public sealed class RedisCredentialStoreTests(RedisContainerFixture fixture, ITe
     [InlineData(7u, 0u)]
     public async Task UpdateCredentialRecordAsync_RefusesACounterAnotherSignInHasAlreadyPassedAsync(uint alreadyStored, uint thisAssertion)
     {
-        if (Skip()) return;
+        if (Skip())
+            return;
         // Two sign-ins both verified against a counter of 5: one stores 7 first, then the slower one arrives.
         var store = NewStore();
         var user = await store.GetOrAddUserAsync("erin", () => NewUser("erin", 5));
@@ -222,7 +233,8 @@ public sealed class RedisCredentialStoreTests(RedisContainerFixture fixture, ITe
     [Fact]
     public async Task UpdateCredentialRecordAsync_RejectsAnUnknownCredentialAsync()
     {
-        if (Skip()) return;
+        if (Skip())
+            return;
         await Assert.ThrowsAsync<InvalidOperationException>(() => NewStore().UpdateCredentialRecordAsync(Assertion([0xde, 0xad], 1)));
         await Assert.ThrowsAsync<ArgumentNullException>(() => NewStore().UpdateCredentialRecordAsync(null!));
     }
@@ -230,7 +242,8 @@ public sealed class RedisCredentialStoreTests(RedisContainerFixture fixture, ITe
     [Fact]
     public async Task RemoveCredentialAsync_RemovesAKnownCredentialAndItsIndexesAsync()
     {
-        if (Skip()) return;
+        if (Skip())
+            return;
         var store = NewStore();
         var user = await store.GetOrAddUserAsync("erin", () => NewUser("erin", 5));
         var credential = NewCredential();
@@ -255,7 +268,8 @@ public sealed class RedisCredentialStoreTests(RedisContainerFixture fixture, ITe
     [Fact]
     public async Task WorksThroughDependencyInjectionAsync()
     {
-        if (Skip()) return;
+        if (Skip())
+            return;
 
         var services = new ServiceCollection();
         services.AddSingleton(fixture.Connect());

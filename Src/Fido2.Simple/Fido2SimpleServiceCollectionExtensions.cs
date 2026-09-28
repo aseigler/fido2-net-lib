@@ -1,4 +1,4 @@
-using Fido2NetLib;
+﻿using Fido2NetLib;
 using Fido2NetLib.Simple;
 
 namespace Microsoft.Extensions.DependencyInjection;

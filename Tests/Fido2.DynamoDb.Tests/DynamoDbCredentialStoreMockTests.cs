@@ -1,4 +1,4 @@
-using Amazon.DynamoDBv2;
+﻿using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 
 using Fido2NetLib.Exceptions;

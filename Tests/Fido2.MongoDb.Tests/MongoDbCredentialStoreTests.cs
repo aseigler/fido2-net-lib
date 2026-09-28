@@ -1,4 +1,4 @@
-using Fido2NetLib.Exceptions;
+﻿using Fido2NetLib.Exceptions;
 using Fido2NetLib.MongoDb;
 using Fido2NetLib.Objects;
 

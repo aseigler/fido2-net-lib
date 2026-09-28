@@ -1,4 +1,4 @@
-using Amazon.DynamoDBv2;
+﻿using Amazon.DynamoDBv2;
 
 using Fido2NetLib;
 using Fido2NetLib.DynamoDb;
