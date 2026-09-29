@@ -117,6 +117,13 @@ Read more:
 in-memory one for demos. See [Documentation/credential-stores.md](Documentation/credential-stores.md) for
 which one to pick and how to register it.
 
+## Simple facade
+
+Building an ordinary sign-up/sign-in flow and don't need WebAuthn extensions or attestation controls? The
+`Fido2.Simple` package wraps `IFido2` and `ICredentialStore` into four methods covering the common ceremonies,
+with the storage lookups and uniqueness checks done for you. See
+[Documentation/fido2-simple.md](Documentation/fido2-simple.md).
+
 ## Configuration
 
 _Only some options are mentioned here, see the [Configuration](https://github.com/passwordless-lib/fido2-net-lib/blob/master/Src/Fido2.Models/Fido2Configuration.cs) class for all options_
