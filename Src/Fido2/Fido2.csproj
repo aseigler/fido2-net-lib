@@ -28,6 +28,19 @@
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
   </ItemGroup>
 
+  <!--
+    Bundle Fido2.Analyzers into this package instead of shipping it separately, so every consumer of Fido2 gets
+    FIDO001/FIDO002 automatically. OutputItemType="Analyzer" also makes the rules apply live while building
+    this solution itself (see Tests/Fido2.Analyzers.Tests for the rules' own tests); ReferenceOutputAssembly is
+    false because consumers must never get an assembly reference to the analyzer, only the analyzer itself.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Fido2.Analyzers\Fido2.Analyzers.csproj"
+                       ReferenceOutputAssembly="false"
+                       OutputItemType="Analyzer"
+                       SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="Fido2.Tests" />
   </ItemGroup>
@@ -39,5 +52,15 @@
     -->
     <Content Include="build/fido2.targets" PackagePath="build/" />
   </ItemGroup>
+
+  <!-- Packs Fido2.Analyzers' build output into this package's analyzers/dotnet/cs, the standard NuGet
+       analyzer path: this is what makes the bundled analyzer actually load in consumers' IDEs/builds, not
+       just this solution's. Depends on the ProjectReference above having already built it. -->
+  <Target Name="IncludeFido2AnalyzersInPackage" BeforeTargets="_GetPackageFiles">
+    <ItemGroup>
+      <None Include="..\Fido2.Analyzers\bin\$(Configuration)\netstandard2.0\Fido2.Analyzers.dll"
+            Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    </ItemGroup>
+  </Target>
 
 </Project>

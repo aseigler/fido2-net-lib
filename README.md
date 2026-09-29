@@ -315,6 +315,10 @@ Credential store packages (`Fido2.EntityFrameworkCore`, `Fido2.MongoDb`, `Fido2.
 `Fido2.Redis`) are listed in
 [Documentation/credential-stores.md](Documentation/credential-stores.md).
 
+`Fido2` also bundles a small set of Roslyn analyzers catching common integration mistakes (a discarded
+`MakeAssertionAsync` result, a uniqueness callback that always returns true) -- nothing extra to install; see
+[Documentation/analyzers.md](Documentation/analyzers.md).
+
 # Contributing
 
 See [Contributing](CONTRIBUTING.md) for information about contributing to the project.
