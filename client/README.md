@@ -73,4 +73,7 @@ if (await browserSupportsWebAuthnAutofill()) {
 npm install
 npm run build      # emits dist/ (JS + .d.ts)
 npm run typecheck  # type-checks without emitting
+npm test           # builds, type-checks test/, then runs test/*.test.ts with node --test
 ```
+
+Tests fake `navigator.credentials`/`PublicKeyCredential` rather than needing a real browser -- see `test/`.

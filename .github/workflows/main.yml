@@ -158,6 +158,32 @@ jobs:
           --configuration Release
           -p:DisableNSec=true
 
+  # Builds, typechecks, and tests the client/ TypeScript package (the browser-side ceremony helper), separate
+  # from the .NET build/test job above since it has its own toolchain.
+  client:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22.x"
+          cache: "npm"
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Run tests
+        working-directory: client
+        run: npm test
+
   # Pack the output into NuGet packages
   pack:
     needs: version

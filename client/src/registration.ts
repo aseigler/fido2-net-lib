@@ -56,7 +56,7 @@ export async function startRegistration(
   { mediation, signal }: StartRegistrationOptions = {},
 ): Promise<RegistrationResponseJSON> {
   const request: CreateRequest = supportsJsonMethods()
-    ? { publicKey: extendedPublicKeyCredential().parseCreationOptionsFromJSON!(optionsJSON).publicKey }
+    ? { publicKey: extendedPublicKeyCredential().parseCreationOptionsFromJSON!(optionsJSON) }
     : optionsFromJsonFallback(optionsJSON);
 
   if (mediation) {

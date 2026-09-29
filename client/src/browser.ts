@@ -8,8 +8,16 @@ import type { ClientCapabilities } from "./types.js";
  * already picked up.
  */
 export interface ExtendedPublicKeyCredentialStatic {
-  parseCreationOptionsFromJSON?: (options: unknown) => CredentialCreationOptions;
-  parseRequestOptionsFromJSON?: (options: unknown) => CredentialRequestOptions;
+  /**
+   * Returns `PublicKeyCredentialCreationOptions` itself (WebAuthn L3 §5.1.8) -- the value to assign to
+   * `CredentialCreationOptions.publicKey`, not `CredentialCreationOptions` already wrapping it.
+   */
+  parseCreationOptionsFromJSON?: (options: unknown) => PublicKeyCredentialCreationOptions;
+  /**
+   * Returns `PublicKeyCredentialRequestOptions` itself (WebAuthn L3 §5.1.8) -- the value to assign to
+   * `CredentialRequestOptions.publicKey`, not `CredentialRequestOptions` already wrapping it.
+   */
+  parseRequestOptionsFromJSON?: (options: unknown) => PublicKeyCredentialRequestOptions;
   getClientCapabilities?: () => Promise<ClientCapabilities>;
   signalUnknownCredential?: (options: unknown) => Promise<void>;
   signalAllAcceptedCredentials?: (options: unknown) => Promise<void>;

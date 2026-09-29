@@ -53,7 +53,7 @@ export async function startAuthentication(
   { mediation, signal }: StartAuthenticationOptions = {},
 ): Promise<AuthenticationResponseJSON> {
   const request: CredentialRequestOptions = supportsJsonMethods()
-    ? { publicKey: extendedPublicKeyCredential().parseRequestOptionsFromJSON!(optionsJSON).publicKey }
+    ? { publicKey: extendedPublicKeyCredential().parseRequestOptionsFromJSON!(optionsJSON) }
     : optionsFromJsonFallback(optionsJSON);
 
   if (mediation) {
