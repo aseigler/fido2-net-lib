@@ -11,13 +11,16 @@ implementation used by the demos. It is not a production store: nothing survives
 
 ## Available stores
 
+Each package name links to its own page: install, a full quickstart (registration through to a running
+`AccountController`), the local-dev Docker command, and the design notes/tradeoffs behind its row here.
+
 | Package | Backend | Pitch | Main tradeoff |
 |---|---|---|---|
-| `Fido2.EntityFrameworkCore` | SQL Server, PostgreSQL, SQLite, MySQL, Cosmos DB -- any EF Core provider | One store, whichever relational database you already run | Generic: Cosmos DB via EF's own provider has partitioning limitations the native `Fido2.Cosmos` store below avoids |
-| `Fido2.MongoDb` | MongoDB | Two collections (users, credentials); a unique index on the username makes `GetOrAddUserAsync` race-safe the same way the EF Core store relies on a database constraint | Call `EnsureIndexesCreatedAsync()` once at startup before using the store |
-| `Fido2.DynamoDb` | DynamoDB | Single-table design idiomatic to DynamoDB; credential items denormalize the owner's identity so a credential-ID lookup never needs a second round trip; a `TransactWriteItems` call gives strongly-consistent global credential-ID uniqueness | None major -- this is the cleanest of the four to operate |
-| `Fido2.Cosmos` | Azure Cosmos DB, native SDK | Deliberate partitioning (credentials and user items partitioned by user ID, so per-user reads/writes are single-partition point operations), instead of what falls out of the generic EF Core Cosmos provider | Credential-ID-only lookups (not scoped to a known user) are cross-partition queries |
-| `Fido2.Redis` | Redis | Simple and fast; `AddCredentialToUserAsync`/`RemoveCredentialAsync` keep the credential record and all of its indexes consistent inside one Redis transaction | Redis has no native secondary index -- every lookup by credential ID or user handle depends on hand-maintained index Sets/keys rather than a query |
+| [`Fido2.EntityFrameworkCore`](credential-store-entityframeworkcore.md) | SQL Server, PostgreSQL, SQLite, MySQL, Cosmos DB -- any EF Core provider | One store, whichever relational database you already run | Generic: Cosmos DB via EF's own provider has partitioning limitations the native `Fido2.Cosmos` store below avoids |
+| [`Fido2.MongoDb`](credential-store-mongodb.md) | MongoDB | Two collections (users, credentials); a unique index on the username makes `GetOrAddUserAsync` race-safe the same way the EF Core store relies on a database constraint | Call `EnsureIndexesCreatedAsync()` once at startup before using the store |
+| [`Fido2.DynamoDb`](credential-store-dynamodb.md) | DynamoDB | Single-table design idiomatic to DynamoDB; credential items denormalize the owner's identity so a credential-ID lookup never needs a second round trip; a `TransactWriteItems` call gives strongly-consistent global credential-ID uniqueness | None major -- this is the cleanest of the four to operate |
+| [`Fido2.Cosmos`](credential-store-cosmos.md) | Azure Cosmos DB, native SDK | Deliberate partitioning (credentials and user items partitioned by user ID, so per-user reads/writes are single-partition point operations), instead of what falls out of the generic EF Core Cosmos provider | Credential-ID-only lookups (not scoped to a known user) are cross-partition queries |
+| [`Fido2.Redis`](credential-store-redis.md) | Redis | Simple and fast; `AddCredentialToUserAsync`/`RemoveCredentialAsync` keep the credential record and all of its indexes consistent inside one Redis transaction | Redis has no native secondary index -- every lookup by credential ID or user handle depends on hand-maintained index Sets/keys rather than a query |
 
 ## How to pick one
 
