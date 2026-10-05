@@ -6,7 +6,12 @@
     <IsPackable>true</IsPackable>
     <Nullable>enable</Nullable>
     <Description>An EF Core-backed ICredentialStore implementation for fido2-net-lib.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Built against the EF Core major that matches each target: EF Core 10's ExecuteUpdate setters are not

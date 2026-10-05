@@ -6,7 +6,12 @@
     <IsPackable>true</IsPackable>
     <Nullable>enable</Nullable>
     <Description>A simple, opinionated facade over IFido2 and ICredentialStore for fido2-net-lib: four methods (initiate/complete registration, initiate/complete authentication) that absorb the storage and callback plumbing the granular API otherwise asks the caller to supply. Does not replace IFido2 -- use it directly for extensions or finer control.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Fido2\Fido2.csproj" />

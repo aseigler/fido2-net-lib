@@ -6,7 +6,12 @@
     <IsPackable>true</IsPackable>
     <Nullable>enable</Nullable>
     <Description>An Azure Cosmos DB-backed ICredentialStore implementation for fido2-net-lib, using the native Microsoft.Azure.Cosmos SDK.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Cosmos" />
