@@ -3,7 +3,8 @@
 An `ICredentialStore` over a single DynamoDB table, using a single-table design idiomatic to DynamoDB rather
 than one table per entity. Credential items denormalize their owner's identity, so a credential-ID-only lookup
 never needs a second round trip, and a `TransactWriteItems` call gives strongly-consistent global credential-ID
-uniqueness across every user's items -- no cross-partition tradeoff to document here, unlike Cosmos or Redis.
+uniqueness across every user's items -- no *partitioning* tradeoff to document here, unlike Cosmos or Redis.
+There's still a consistency tradeoff, just a different one: see [Design notes](#design-notes) below.
 
 See [Documentation/credential-stores.md](credential-stores.md) for how it compares to the other packages.
 
@@ -103,3 +104,10 @@ local development.
   atomically creates the credential item and a reservation item together -- if the reservation already exists,
   the whole transaction fails, so two concurrent registrations can never both succeed with the same credential
   ID.
+- **Credential-ID and user-handle lookups are only eventually consistent.** `GetCredentialByIdAsync`,
+  `GetUsersByCredentialIdAsync`, `UpdateCredentialRecordAsync`, and `RemoveCredentialAsync` all resolve a
+  credential through a Global Secondary Index, and DynamoDB GSIs do not support strongly-consistent reads at
+  all -- a credential registered a moment ago can briefly fail to resolve through one. The uniqueness
+  guarantee above and the sign-count-regression check in `UpdateCredentialRecordAsync` don't depend on the
+  index either way (both go through the base table, which is strongly consistent); only *finding* a
+  credential by its ID or user handle has this window.
