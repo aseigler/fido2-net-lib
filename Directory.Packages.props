@@ -49,6 +49,7 @@
     <PackageVersion Include="AWSSDK.DynamoDBv2" Version="3.7.400.0" />
     <PackageVersion Include="Microsoft.Azure.Cosmos" Version="3.44.0" />
     <PackageVersion Include="StackExchange.Redis" Version="2.8.24" />
+    <PackageVersion Include="Google.Cloud.Firestore" Version="4.4.0" />
     <PackageVersion Include="System.DirectoryServices.Protocols" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />

@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <EnableCentralPackageManagement>true</EnableCentralPackageManagement>
+    <!-- Same pre-existing, narrowly-scoped suppression as the other Testcontainers-based store test projects
+         (Mongo/Redis/Cosmos): Testcontainers pulls SSH.NET transitively for a remote-Docker-over-SSH code path
+         never exercised here (tests only ever talk to a local Docker socket). -->
+    <NoWarn>$(NoWarn);NU1903</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <!-- Runs the Firestore emulator in a disposable container so tests exercise real service behaviour
+         (document-ID uniqueness, transaction retry, query semantics) instead of mocking the SDK. The SDK's
+         own types (FirestoreDb, DocumentReference, Transaction) are not designed to be mockable the way
+         Microsoft.Azure.Cosmos's are, so unlike Fido2.Cosmos.Tests there is no separate Moq-based mock layer
+         here: these emulator-backed tests are this store's only test coverage. -->
+    <PackageReference Include="Testcontainers" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Src\Fido2.Firestore\Fido2.Firestore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

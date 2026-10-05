@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(SupportedTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Fido2NetLib.Firestore</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <Nullable>enable</Nullable>
+    <Description>A Google Cloud Firestore-backed ICredentialStore implementation for fido2-net-lib.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Cloud.Firestore" />
+    <!-- Only this project needs the DI abstractions (IServiceCollection) directly. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fido2.Models\Fido2.Models.csproj" />
+  </ItemGroup>
+
+</Project>

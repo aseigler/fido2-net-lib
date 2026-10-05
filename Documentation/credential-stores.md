@@ -21,14 +21,15 @@ Each package name links to its own page: install, a full quickstart (registratio
 | [`Fido2.DynamoDb`](credential-store-dynamodb.md) | DynamoDB | Single-table design idiomatic to DynamoDB; credential items denormalize the owner's identity so a credential-ID lookup never needs a second round trip; a `TransactWriteItems` call gives strongly-consistent global credential-ID uniqueness | None major -- this is the cleanest of the four to operate |
 | [`Fido2.Cosmos`](credential-store-cosmos.md) | Azure Cosmos DB, native SDK | Deliberate partitioning (credentials and user items partitioned by user ID, so per-user reads/writes are single-partition point operations), instead of what falls out of the generic EF Core Cosmos provider | Credential-ID-only lookups (not scoped to a known user) are cross-partition queries |
 | [`Fido2.Redis`](credential-store-redis.md) | Redis | Simple and fast; `AddCredentialToUserAsync`/`RemoveCredentialAsync` keep the credential record and all of its indexes consistent inside one Redis transaction | Redis has no native secondary index -- every lookup by credential ID or user handle depends on hand-maintained index Sets/keys rather than a query |
+| [`Fido2.Firestore`](credential-store-firestore.md) | Google Cloud Firestore | Every lookup is a direct document read, not a query -- a credential ID and a username are each a document's own ID, so Firestore's own per-collection ID uniqueness enforces both are claimable exactly once, globally, with no partition key or reservation item needed | Only `GetCredentialsByUserAsync` and `GetCredentialsByUserHandleAsync` run an actual query, since neither a user ID nor a user handle is a credential's own document ID |
 
 ## How to pick one
 
 - Already running a relational database (or Cosmos DB, and the cross-partition tradeoff below doesn't matter
   to you) → `Fido2.EntityFrameworkCore`.
-- Already running MongoDB, DynamoDB, Cosmos DB, or Redis → the matching native package. Prefer `Fido2.Cosmos`
-  over `Fido2.EntityFrameworkCore` on Cosmos specifically if you want deliberate partitioning rather than
-  whatever EF's provider does with it.
+- Already running MongoDB, DynamoDB, Cosmos DB, Firestore, or Redis → the matching native package. Prefer
+  `Fido2.Cosmos` over `Fido2.EntityFrameworkCore` on Cosmos specifically if you want deliberate partitioning
+  rather than whatever EF's provider does with it.
 - None of the above, or just evaluating the library → `Fido2.Development`'s `DevelopmentInMemoryStore`, then
   swap it out before going to production.
 
@@ -56,6 +57,10 @@ services.AddFido2CosmosStore(sp => sp.GetRequiredService<CosmosClient>().GetCont
 
 // Fido2.Redis
 services.AddFido2RedisStore(); // optionally a keyPrefix other than the default "fido2:"
+
+// Fido2.Firestore -- you register the FirestoreDb, same shape as MongoDB's IMongoDatabase
+services.AddSingleton(_ => FirestoreDb.Create(projectId));
+services.AddFido2FirestoreStore();
 ```
 
 Whichever you choose, resolve `ICredentialStore` from the container as usual -- the rest of your integration

@@ -319,7 +319,7 @@ return Json(result);
 https://www.nuget.org/packages/Fido2/ and https://www.nuget.org/packages/Fido2.Models/
 
 Credential store packages (`Fido2.EntityFrameworkCore`, `Fido2.MongoDb`, `Fido2.DynamoDb`, `Fido2.Cosmos`,
-`Fido2.Redis`) are listed in
+`Fido2.Firestore`, `Fido2.Redis`) are listed in
 [Documentation/credential-stores.md](Documentation/credential-stores.md).
 
 `Fido2` also bundles a small set of Roslyn analyzers catching common integration mistakes (a discarded
