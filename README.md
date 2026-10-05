@@ -108,13 +108,16 @@ Read more:
 - ✅ Blazor WebAssembly support for client-side applications
 - ✅ Examples & demos (ASP.NET Core and Blazor WebAssembly)
 - ✅ Intellisense documentation
+- ✅ FIPS mode: every supported algorithm except EdDSA already delegates to the OS's own FIPS-validated
+  crypto; building from source with `DisableNSec` removes EdDSA too -- see [the guide](Documentation/fips-mode.md)
+  for what that takes today and its current limitations
 
 ## Credential storage
 
 `IFido2` verifies ceremonies; it does not persist anything. Storing `Fido2User`s and their credentials is
-`ICredentialStore`'s job, and this repo ships five implementations of it -- SQL Server/PostgreSQL/SQLite/MySQL
-(any EF Core provider), MongoDB, DynamoDB, Cosmos DB (native SDK), and Redis -- plus an
-in-memory one for demos. See [Documentation/credential-stores.md](Documentation/credential-stores.md) for
+`ICredentialStore`'s job, and this repo ships six implementations of it -- SQL Server/PostgreSQL/SQLite/MySQL
+(any EF Core provider), MongoDB, DynamoDB, Cosmos DB (native SDK), Google Cloud Firestore, and Redis -- plus
+an in-memory one for demos. See [Documentation/credential-stores.md](Documentation/credential-stores.md) for
 which one to pick and how to register it.
 
 ## Simple facade
@@ -334,6 +337,8 @@ This project has adopted the code of conduct defined by the Contributor Covenant
 For more information see the [.NET Foundation Code of Conduct](https://dotnetfoundation.org/code-of-conduct).
 
 For security and penetration testing, please see our [Vulnerability Disclosure Program](./SECURITY.md)
+
+For supported .NET versions, release cadence, and how long a version keeps getting fixes, see [SUPPORT.md](./SUPPORT.md).
 
 ## Contributors
 
