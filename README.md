@@ -108,9 +108,6 @@ Read more:
 - ✅ Blazor WebAssembly support for client-side applications
 - ✅ Examples & demos (ASP.NET Core and Blazor WebAssembly)
 - ✅ Intellisense documentation
-- ✅ FIPS mode: every supported algorithm except EdDSA already delegates to the OS's own FIPS-validated
-  crypto; building from source with `DisableNSec` removes EdDSA too -- see [the guide](Documentation/fips-mode.md)
-  for what that takes today and its current limitations
 
 ## Credential storage
 
@@ -126,6 +123,16 @@ Building an ordinary sign-up/sign-in flow and don't need WebAuthn extensions or 
 `Fido2.Simple` package wraps `IFido2` and `ICredentialStore` into four methods covering the common ceremonies,
 with the storage lookups and uniqueness checks done for you. See
 [Documentation/fido2-simple.md](Documentation/fido2-simple.md).
+
+## FIPS mode
+
+Most of what this library verifies (ECDSA, RSA) already delegates to the host OS's own cryptographic
+module, which is FIPS 140-validated the moment that OS is itself in FIPS mode -- no code change needed.
+EdDSA is the one exception (it goes through `NSec`/`libsodium`, which never touches the OS), and closing
+that gap today means building from source with `DisableNSec=true`; the published NuGet package can't do
+this. See [Documentation/fips-mode.md](Documentation/fips-mode.md) for the full picture, including the
+legacy SHA-1 interop caveats and why this is a starting point for your own compliance assessment, not a
+claim of certification on this library's part.
 
 ## Configuration
 
