@@ -45,8 +45,11 @@ public sealed class FirestoreEmulatorFixture : IAsyncLifetime
             await _emulator.StartAsync().WaitAsync(TimeSpan.FromSeconds(90));
 
             // The builder only ever looks at FIRESTORE_EMULATOR_HOST itself (there is no settable property for
-            // it), so the emulator's mapped port has to go through the environment, not the builder.
-            Environment.SetEnvironmentVariable("FIRESTORE_EMULATOR_HOST", $"localhost:{_emulator.GetMappedPublicPort(8080)}");
+            // it), so the emulator's mapped port has to go through the environment, not the builder. Using the
+            // container's own Hostname rather than a literal "localhost" matters whenever the Docker daemon
+            // itself is remote (TESTCONTAINERS_HOST_OVERRIDE / a non-local DOCKER_HOST): the published port is
+            // only reachable at the Docker host's own address, not on this process's loopback interface.
+            Environment.SetEnvironmentVariable("FIRESTORE_EMULATOR_HOST", $"{_emulator.Hostname}:{_emulator.GetMappedPublicPort(8080)}");
 
             Db = await new FirestoreDbBuilder
             {

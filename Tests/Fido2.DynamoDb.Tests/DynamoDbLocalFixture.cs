@@ -59,7 +59,9 @@ public sealed class DynamoDbLocalFixture : IAsyncLifetime
                     // real regional AWS endpoint over this custom URL -- silently sending every request to real
                     // AWS instead of the local container. AuthenticationRegion (plus UseHttp, since ServiceURL is
                     // plain HTTP) gets SigV4 the region string it needs without that override.
-                    ServiceURL = $"http://localhost:{_container.GetMappedPublicPort(8000)}",
+                    // The container's own Hostname, not a literal "localhost": when the Docker daemon itself is
+                    // remote, the published port is only reachable at the Docker host's own address.
+                    ServiceURL = $"http://{_container.Hostname}:{_container.GetMappedPublicPort(8000)}",
                     UseHttp = true,
                     AuthenticationRegion = "us-east-1",
                 });

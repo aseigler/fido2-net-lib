@@ -45,7 +45,9 @@ public sealed class CosmosEmulatorFixture : IAsyncLifetime
 
             await _emulator.StartAsync().WaitAsync(TimeSpan.FromSeconds(90));
 
-            var endpoint = $"https://localhost:{_emulator.GetMappedPublicPort(8081)}";
+            // The container's own Hostname, not a literal "localhost": when the Docker daemon itself is remote,
+            // the published port is only reachable at the Docker host's own address.
+            var endpoint = $"https://{_emulator.Hostname}:{_emulator.GetMappedPublicPort(8081)}";
             _client = new CosmosClient(endpoint, EmulatorKey, new CosmosClientOptions
             {
                 ConnectionMode = ConnectionMode.Gateway,
