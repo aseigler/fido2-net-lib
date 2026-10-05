@@ -66,6 +66,26 @@ public sealed class RedisCredentialStoreTests(RedisContainerFixture fixture, ITe
     }
 
     [Fact]
+    public async Task GetOrAddUserAsync_ReturnsTheUserAConcurrentRequestAddedAsync()
+    {
+        if (Skip())
+            return;
+        // The callback runs after this store found no user, so adding the same name from within it (against the
+        // same key prefix, i.e. the same underlying keyspace) reproduces two requests racing to create one account.
+        var store = NewStore();
+        var winner = NewUser("frank", 6);
+
+        var user = await store.GetOrAddUserAsync("frank", () =>
+        {
+            store.GetOrAddUserAsync("frank", () => winner).GetAwaiter().GetResult();
+            return NewUser("frank", 7);
+        });
+
+        Assert.Equal(winner.Id, user.Id);
+        Assert.Equal(winner.Id, (await store.GetUserAsync("frank"))!.Id);
+    }
+
+    [Fact]
     public async Task AddCredentialToUserAsync_StoresTheCredentialWithTheUsersIdAsync()
     {
         if (Skip())

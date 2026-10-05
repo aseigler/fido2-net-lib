@@ -57,6 +57,26 @@ public sealed class DynamoDbCredentialStoreTests : IClassFixture<DynamoDbLocalFi
     }
 
     [SkippableFact]
+    public async Task GetOrAddUserAsync_ReturnsTheUserAConcurrentRequestAddedAsync()
+    {
+        Skip.IfNot(_fixture.IsAvailable, _fixture.SkipReason);
+        // The callback runs after this store found no user, so adding the same name from another store instance
+        // inside it reproduces two requests racing to create one account.
+        var store = NewStore();
+        var name = UniqueName("frank");
+        var winner = NewUser(name);
+
+        var user = await store.GetOrAddUserAsync(name, () =>
+        {
+            NewStore().GetOrAddUserAsync(name, () => winner).GetAwaiter().GetResult();
+            return NewUser(name);
+        });
+
+        Assert.Equal(winner.Id, user.Id);
+        Assert.Equal(winner.Id, (await store.GetUserAsync(name))!.Id);
+    }
+
+    [SkippableFact]
     public async Task AddCredentialToUserAsync_StoresTheCredentialWithTheUsersIdAsync()
     {
         Skip.IfNot(_fixture.IsAvailable, _fixture.SkipReason);
